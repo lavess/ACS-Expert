@@ -78,7 +78,7 @@ export function Agenda() {
       {/* Header */}
       <div className="bg-white border-b border-acs-line px-6 py-4">
         <div className="flex items-center justify-between mb-4">
-          <div>
+          <div className="pl-12 lg:pl-0">
             <h2 className="font-display font-bold text-acs-ink">Agenda do Dia</h2>
             <p className="text-sm text-acs-ink-3">19 de marco de 2026</p>
           </div>

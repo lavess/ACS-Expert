@@ -156,7 +156,7 @@ export function Pacientes() {
       <div className="bg-white border-b border-acs-line px-4 lg:px-8 py-4 lg:py-6">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-display font-bold text-acs-ink text-lg lg:text-xl">
+            <h2 className="font-display font-bold text-acs-ink text-lg lg:text-xl pl-12 lg:pl-0">
               Meus Pacientes
             </h2>
             {/* Desktop: Novo paciente button */}

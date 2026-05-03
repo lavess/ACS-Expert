@@ -16,17 +16,21 @@
   --acs-azul-050:    #ECF2F9;
 
   --acs-coral:       #E76F4A;
+  --acs-coral-700:   #B14826;
   --acs-coral-300:   #F4B39E;
   --acs-coral-100:   #FCE5DC;
 
   --acs-verde:       #2F9E6E;
+  --acs-verde-700:   #1F6A4A;
   --acs-verde-300:   #8FD1B3;
   --acs-verde-100:   #D9EFE5;
 
   --acs-amar:        #F2B134;
+  --acs-amar-700:    #A37A0F;
   --acs-amar-100:    #FCEDCE;
 
   --acs-vermelho:    #C8364A;
+  --acs-vermelho-700:#8B2333;
   --acs-vermelho-100:#F7DBDF;
 
   --acs-paper:       #F5F1EB;
@@ -185,14 +189,18 @@
   --color-acs-azul-100:     var(--acs-azul-100);
   --color-acs-azul-050:     var(--acs-azul-050);
   --color-acs-coral:        var(--acs-coral);
+  --color-acs-coral-700:    var(--acs-coral-700);
   --color-acs-coral-300:    var(--acs-coral-300);
   --color-acs-coral-100:    var(--acs-coral-100);
   --color-acs-verde:        var(--acs-verde);
+  --color-acs-verde-700:    var(--acs-verde-700);
   --color-acs-verde-300:    var(--acs-verde-300);
   --color-acs-verde-100:    var(--acs-verde-100);
   --color-acs-amar:         var(--acs-amar);
+  --color-acs-amar-700:     var(--acs-amar-700);
   --color-acs-amar-100:     var(--acs-amar-100);
   --color-acs-vermelho:     var(--acs-vermelho);
+  --color-acs-vermelho-700: var(--acs-vermelho-700);
   --color-acs-vermelho-100: var(--acs-vermelho-100);
   --color-acs-paper:        var(--acs-paper);
   --color-acs-paper-2:      var(--acs-paper-2);

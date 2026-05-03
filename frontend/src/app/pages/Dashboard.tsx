@@ -76,7 +76,7 @@ export function Dashboard() {
       <div className="bg-white border-b border-acs-line px-4 lg:px-8 py-4 lg:py-6">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-start justify-between">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 pl-12 lg:pl-0">
               <div className="w-12 h-12 lg:w-14 lg:h-14 rounded-full bg-acs-azul flex items-center justify-center text-white font-semibold">
                 {iniciais(nome)}
               </div>

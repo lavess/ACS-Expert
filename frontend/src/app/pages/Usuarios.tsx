@@ -60,7 +60,7 @@ export function Usuarios() {
       {/* Header */}
       <div className="bg-white border-b border-acs-line px-6 py-4">
         <div className="flex items-center justify-between">
-          <div>
+          <div className="pl-12 lg:pl-0">
             <h2 className="font-bold text-acs-ink font-display">Usuários</h2>
             <p className="text-xs text-acs-ink-3 mt-0.5">
               {loading ? 'Carregando…' : `${usuarios.length} cadastrados`}

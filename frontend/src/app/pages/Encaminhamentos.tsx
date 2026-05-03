@@ -219,7 +219,7 @@ export function Encaminhamentos() {
     <div className="h-full flex flex-col pb-16 overflow-y-auto">
       {/* Header */}
       <div className="bg-white border-b border-acs-line px-6 py-4">
-        <h2 className="font-display font-bold text-acs-ink mb-4">Encaminhamentos</h2>
+        <h2 className="font-display font-bold text-acs-ink mb-4 pl-12 lg:pl-0">Encaminhamentos</h2>
 
         {/* Tabs */}
         <div className="flex gap-2 overflow-x-auto">
