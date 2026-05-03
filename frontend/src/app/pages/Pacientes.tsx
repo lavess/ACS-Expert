@@ -19,6 +19,7 @@ import {
   riscoToUI,
   type PacienteListagem,
 } from '@/services/pacientesService';
+import { EncaminhamentoVencidoBadge } from '@/features/encaminhamentos';
 
 type FiltroId = 'todos' | 'alto' | 'cronicos' | 'gestantes' | 'sem-visita' | 'alertas';
 type SortOption = 'risco' | 'sem-visita' | 'nome';
@@ -49,7 +50,9 @@ export function Pacientes() {
   const stats = useMemo(() => {
     const total = pacientes.length;
     const alto = pacientes.filter((p) => p.nivel_risco === 'alto').length;
-    const alertas = pacientes.filter((p) => (p as any).alertas_pendentes > 0).length;
+    const alertas = pacientes.filter(
+      (p) => (p.alertas_pendentes ?? 0) > 0 || (p.total_encaminhamentos_vencidos ?? 0) > 0
+    ).length;
     return { total, alto, alertas };
   }, [pacientes]);
 
@@ -104,7 +107,9 @@ export function Pacientes() {
         return new Date(p.data_ultima_visita) < limite;
       });
     } else if (activeFilter === 'alertas') {
-      filtered = filtered.filter((p) => ((p as any).alertas_pendentes ?? 0) > 0);
+      filtered = filtered.filter(
+        (p) => (p.alertas_pendentes ?? 0) > 0 || (p.total_encaminhamentos_vencidos ?? 0) > 0
+      );
     }
 
     // Sort
@@ -319,7 +324,8 @@ export function Pacientes() {
                 const risco = riscoToUI(paciente.nivel_risco);
                 const idade = calcularIdade(paciente.data_nascimento);
                 const endereco = [paciente.logradouro, paciente.numero].filter(Boolean).join(', ');
-                const alertasPendentes = (paciente as any).alertas_pendentes ?? 0;
+                const alertasPendentes = paciente.alertas_pendentes ?? 0;
+                const totalVencidos    = paciente.total_encaminhamentos_vencidos ?? 0;
                 const scoreRisco = paciente.score_risco_atual ?? 0;
 
                 return (
@@ -361,13 +367,18 @@ export function Pacientes() {
                           </div>
                         </div>
 
-                        {/* Alert badge */}
-                        {alertasPendentes > 0 && (
-                          <div className="inline-flex items-center gap-1 bg-acs-coral/10 text-acs-coral rounded-md px-2 py-0.5 mb-1.5">
-                            <AlertTriangle size={12} strokeWidth={2} />
-                            <span className="font-mono text-[10px] font-semibold uppercase tracking-[.1em]">
-                              {alertasPendentes} alerta{alertasPendentes !== 1 ? 's' : ''}
-                            </span>
+                        {/* Sinalizações */}
+                        {(alertasPendentes > 0 || totalVencidos > 0) && (
+                          <div className="flex flex-wrap gap-1.5 mb-1.5">
+                            {alertasPendentes > 0 && (
+                              <div className="inline-flex items-center gap-1 bg-acs-coral/10 text-acs-coral rounded-md px-2 py-0.5">
+                                <AlertTriangle size={12} strokeWidth={2} />
+                                <span className="font-mono text-[10px] font-semibold uppercase tracking-[.1em]">
+                                  {alertasPendentes} alerta{alertasPendentes !== 1 ? 's' : ''}
+                                </span>
+                              </div>
+                            )}
+                            <EncaminhamentoVencidoBadge count={totalVencidos} />
                           </div>
                         )}
 

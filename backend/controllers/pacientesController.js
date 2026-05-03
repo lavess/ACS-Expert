@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const alertasService = require('../services/alertas');
 
 const COMORBIDADES_VALIDAS = [
   'fumante', 'hipertenso', 'diabetico', 'obeso',
@@ -57,6 +58,16 @@ async function substituirComorbidades(conn, pacienteId, comorbidades) {
 // Query params: busca, nivel_risco, microarea_id, acs_responsavel_id, ativo
 async function listar(req, res) {
   try {
+    // Roda a regra automática de alertas SLA vencido do ACS logado
+    // antes de listar, p/ que `alertas_pendentes` reflita o estado atual.
+    if (req.usuario?.id) {
+      try {
+        await alertasService.gerarAlertasEncaminhamentosVencidos(req.usuario.id);
+      } catch (err) {
+        console.warn('[PACIENTES/listar] gerar alertas vencidos falhou:', err.message);
+      }
+    }
+
     const { busca, nivel_risco, microarea_id, acs_responsavel_id, ativo } = req.query;
 
     let sql = `
@@ -69,10 +80,26 @@ async function listar(req, res) {
         d.id   AS domicilio_id,
         d.logradouro, d.numero, d.complemento, d.bairro, d.cep,
         d.microarea_id,
-        ma.nome AS microarea_nome
+        ma.nome AS microarea_nome,
+        COALESCE(ev.total, 0) AS total_encaminhamentos_vencidos,
+        COALESCE(al.total, 0) AS alertas_pendentes
       FROM pacientes p
       LEFT JOIN domicilios d  ON p.domicilio_id = d.id
       LEFT JOIN microareas ma ON d.microarea_id = ma.id
+      LEFT JOIN (
+        SELECT paciente_id, COUNT(*) AS total
+          FROM encaminhamentos
+         WHERE status = 'pendente'
+           AND data_prevista IS NOT NULL
+           AND data_prevista < CURDATE()
+         GROUP BY paciente_id
+      ) ev ON ev.paciente_id = p.id
+      LEFT JOIN (
+        SELECT paciente_id, COUNT(*) AS total
+          FROM alertas
+         WHERE resolvido = 0 AND paciente_id IS NOT NULL
+         GROUP BY paciente_id
+      ) al ON al.paciente_id = p.id
       WHERE 1=1
     `;
     const params = [];

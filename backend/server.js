@@ -11,10 +11,12 @@ app.use(express.json());
 app.use(cors());
 
 // ── Rotas ──────────────────────────────────────────────────────
-app.use('/api/usuarios',   require('./routes/usuarios'));
-app.use('/api/microareas', require('./routes/microareas'));
-app.use('/api/pacientes',  require('./routes/pacientes'));
-app.use('/api/triagens',   require('./routes/triagens'));
+app.use('/api/usuarios',         require('./routes/usuarios'));
+app.use('/api/microareas',       require('./routes/microareas'));
+app.use('/api/unidades-saude',   require('./routes/unidades-saude'));
+app.use('/api/pacientes',        require('./routes/pacientes'));
+app.use('/api/triagens',         require('./routes/triagens'));
+app.use('/api/encaminhamentos',  require('./routes/encaminhamentos'));
 
 // ── Auth ───────────────────────────────────────────────────────
 app.post('/api/auth/login', async (req, res) => {

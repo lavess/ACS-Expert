@@ -29,30 +29,36 @@ interface TriagemState {
   qualifiers:  Record<string, Record<string, boolean>>
   catalogo:    CatalogoTriagem | null
   resultado:   TriagemResultadoAPI | null
+  /** Marcado true após o save bem-sucedido. As telas do wizard
+   *  redirecionam para o perfil do paciente quando este flag está ativo
+   *  (cobre o caso "Voltar" do navegador após salvar a triagem). */
+  triagemConcluida: boolean
 
   // Actions
-  setPaciente:      (p: TriagemContextoPaciente) => void
-  setTipoVisita:    (t: TipoVisita) => void
-  setObservacao:    (o: string) => void
-  toggleRiskFactor: (f: Comorbidade) => void
-  setRiskFactors:   (list: Comorbidade[]) => void
-  toggleSintoma:    (id: string) => void
-  setIntensidade:   (id: string, v: number) => void
-  toggleQualifier:  (sintomaId: string, qualifierId: string) => void
-  setCatalogo:      (c: CatalogoTriagem) => void
-  setResultado:     (r: TriagemResultadoAPI | null) => void
-  reset:            () => void
+  setPaciente:            (p: TriagemContextoPaciente) => void
+  setTipoVisita:          (t: TipoVisita) => void
+  setObservacao:          (o: string) => void
+  toggleRiskFactor:       (f: Comorbidade) => void
+  setRiskFactors:         (list: Comorbidade[]) => void
+  toggleSintoma:          (id: string) => void
+  setIntensidade:         (id: string, v: number) => void
+  toggleQualifier:        (sintomaId: string, qualifierId: string) => void
+  setCatalogo:            (c: CatalogoTriagem) => void
+  setResultado:           (r: TriagemResultadoAPI | null) => void
+  marcarTriagemConcluida: (v: boolean) => void
+  reset:                  () => void
 }
 
 const estadoInicial = {
-  paciente:    null,
-  tipoVisita:  'rotina' as TipoVisita,
-  observacao:  '',
-  riskFactors: [] as Comorbidade[],
-  sintomas:    {} as Record<string, TriagemSintomaSel>,
-  qualifiers:  {} as Record<string, Record<string, boolean>>,
-  catalogo:    null,
-  resultado:   null,
+  paciente:        null,
+  tipoVisita:      'rotina' as TipoVisita,
+  observacao:      '',
+  riskFactors:     [] as Comorbidade[],
+  sintomas:        {} as Record<string, TriagemSintomaSel>,
+  qualifiers:      {} as Record<string, Record<string, boolean>>,
+  catalogo:        null,
+  resultado:       null,
+  triagemConcluida: false,
 }
 
 export const useTriagemStore = create<TriagemState>()((set) => ({
@@ -104,6 +110,8 @@ export const useTriagemStore = create<TriagemState>()((set) => ({
 
   setCatalogo:  (c) => set({ catalogo: c }),
   setResultado: (r) => set({ resultado: r }),
+
+  marcarTriagemConcluida: (v) => set({ triagemConcluida: v }),
 
   reset: () => set({ ...estadoInicial }),
 }))

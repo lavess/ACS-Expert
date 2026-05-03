@@ -3,7 +3,7 @@ import {
   CalendarCheck, Search, Undo2, AlertTriangle,
   ArrowRight, Lock, Check,
 } from 'lucide-react';
-import { useNavigate, useParams } from 'react-router';
+import { useNavigate, useParams, Navigate } from 'react-router';
 import { useEffect, useState } from 'react';
 import { useTriagemStore } from '@/store/triagemStore';
 import { pacientesService, calcularIdade } from '@/services/pacientesService';
@@ -36,6 +36,7 @@ export function TriagemPasso1() {
   const { pacienteId } = useParams();
   const {
     paciente, tipoVisita, observacao, riskFactors, catalogo,
+    triagemConcluida,
     setPaciente, setTipoVisita, setObservacao,
     toggleRiskFactor, setRiskFactors, setCatalogo, reset,
   } = useTriagemStore();
@@ -50,6 +51,9 @@ export function TriagemPasso1() {
 
   useEffect(() => {
     if (!pacienteId) return;
+    // Triagem já concluída neste fluxo — não buscar/popular store; o
+    // guard abaixo redirecionará imediatamente para o perfil.
+    if (triagemConcluida) return;
     let cancelado = false;
 
     async function carregar() {
@@ -99,6 +103,13 @@ export function TriagemPasso1() {
     return () => { cancelado = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pacienteId]);
+
+  /* ── Guard: triagem concluida ────────────────────────────── */
+  // Após save bem-sucedido, qualquer remontagem desta tela (back do
+  // navegador, deep link) leva direto ao perfil do paciente.
+  if (triagemConcluida && pacienteId) {
+    return <Navigate to={`/paciente/${pacienteId}`} replace />;
+  }
 
   /* ── Loading ─────────────────────────────────────────────── */
   if (loading) {

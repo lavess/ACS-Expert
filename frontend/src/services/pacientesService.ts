@@ -63,6 +63,10 @@ export interface PacienteListagem {
   cep?: string
   microarea_id?: number
   microarea_nome?: string
+  /** Encaminhamentos pendentes com data_prevista < hoje. */
+  total_encaminhamentos_vencidos?: number
+  /** Alertas não-resolvidos vinculados ao paciente. */
+  alertas_pendentes?: number
 }
 
 export interface PacienteDetalhe extends PacienteListagem {

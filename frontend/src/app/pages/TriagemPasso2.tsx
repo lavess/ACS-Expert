@@ -5,7 +5,7 @@ import {
   Thermometer, Brain, HeadsetIcon, Eye, Ear, HeartPulse,
   Wind, Salad, Droplets, Baby, Bone, Sparkles,
 } from 'lucide-react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useParams, Navigate } from 'react-router';
 import { useMemo, useState, useCallback } from 'react';
 import { useTriagemStore } from '@/store/triagemStore';
 import type { SintomaCatalogo } from '@/services/triagensService';
@@ -137,14 +137,20 @@ function SintomaRow({ sintoma, ativo, intensity, onToggle, onOpenSheet }: Sintom
 
 export function TriagemPasso2() {
   const navigate = useNavigate();
+  const { pacienteId } = useParams();
   const {
-    paciente, catalogo, sintomas, qualifiers,
+    paciente, catalogo, sintomas, qualifiers, triagemConcluida,
     toggleSintoma, setIntensidade, toggleQualifier,
   } = useTriagemStore();
 
   const [busca, setBusca]             = useState('');
   const [grupoAtivo, setGrupoAtivo]   = useState<string | null>(null);
   const [sheetSintoma, setSheetSintoma] = useState<string | null>(null);
+
+  /* Guard: triagem concluida — redireciona p/ perfil sem flash */
+  if (triagemConcluida && pacienteId) {
+    return <Navigate to={`/paciente/${pacienteId}`} replace />;
+  }
 
   /* Guard clause */
   if (!paciente || !catalogo) {

@@ -17,6 +17,7 @@ import {
 import { useNavigate, useParams } from 'react-router';
 import { RiskBadge } from '../components/RiskBadge';
 import { riscoToUI } from '@/services/pacientesService';
+import { useTriagemStore } from '@/store/triagemStore';
 import {
   triagensService,
   labelPrioridade,
@@ -430,7 +431,10 @@ export function DetalheTriagem() {
           <p className="eyebrow mb-3">Acoes</p>
           <div className="flex flex-col gap-2">
             <button
-              onClick={() => navigate(`/triagem/${triagem.paciente_id}/passo1`)}
+              onClick={() => {
+                useTriagemStore.getState().reset();
+                navigate(`/triagem/${triagem.paciente_id}/passo1`);
+              }}
               className="w-full flex items-center justify-between px-4 py-3 bg-acs-coral text-white rounded-xl font-semibold text-sm hover:brightness-95 transition-all shadow-[0_4px_12px_rgba(231,111,74,.3)]"
             >
               <span className="flex items-center gap-2">

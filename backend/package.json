@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "seed:admin": "node database/seed-admin.js",
-    "seed:microareas:joinville": "node database/seed-microareas-joinville.js"
+    "seed:microareas:joinville": "node database/seed-microareas-joinville.js",
+    "seed:unidades:joinville": "node database/seed-unidades-saude-joinville.js"
   },
   "keywords": [],
   "author": "",

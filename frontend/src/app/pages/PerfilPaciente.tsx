@@ -37,6 +37,17 @@ import {
   corPrioridade,
   type TriagemResumo,
 } from '@/services/triagensService';
+import { useTriagemStore } from '@/store/triagemStore';
+import {
+  encaminhamentosService,
+  TIPO_ENCAMINHAMENTO_LABEL,
+  type EncaminhamentoAPI,
+} from '@/services/encaminhamentosService';
+import {
+  RegistrarEncaminhamentoSheet,
+  RegistrarDesfechoSheet,
+  EncaminhamentoVencidoBadge,
+} from '@/features/encaminhamentos';
 import type { Comorbidade } from '@/types';
 
 const COMORBIDADE_LABEL: Record<Comorbidade, string> = {
@@ -64,13 +75,6 @@ function formatarCNS(cns?: string) {
   if (d.length !== 15) return cns;
   return `${d.slice(0, 3)} ${d.slice(3, 7)} ${d.slice(7, 11)} ${d.slice(11)}`;
 }
-
-type EncaminhamentoItem = {
-  id: number;
-  data: string;
-  tipo: string;
-  status: 'realizado' | 'pendente' | 'ausencia' | 'cancelado';
-};
 
 /* Risk color map for gradients and avatar tones */
 const RISK_COLORS: Record<string, { gradient: string; avatarBg: string; avatarFg: string; dot: string }> = {
@@ -120,12 +124,29 @@ function FlagBadge({ icon: Icon, label, variant }: { icon: React.ElementType; la
 export function PerfilPaciente() {
   const navigate = useNavigate();
   const { id } = useParams();
+
+  // Inicia uma nova triagem: limpa qualquer estado residual (incluindo
+  // a flag `triagemConcluida` deixada por um save anterior) antes de
+  // entrar no passo 1. Sem isso o wizard redireciona de volta para cá.
+  const iniciarNovaTriagem = (pacienteId: number) => {
+    useTriagemStore.getState().reset();
+    navigate(`/triagem/${pacienteId}/passo1`);
+  };
   const [paciente, setPaciente] = useState<PacienteDetalhe | null>(null);
   const [loading, setLoading]   = useState(true);
   const [erro, setErro]         = useState<string | null>(null);
 
   const [triagens, setTriagens] = useState<TriagemResumo[]>([]);
-  const [encaminhamentos] = useState<EncaminhamentoItem[]>([]);
+  const [encaminhamentos, setEncaminhamentos] = useState<EncaminhamentoAPI[]>([]);
+  const [sheetEncOpen, setSheetEncOpen] = useState(false);
+  const [encDesfecho, setEncDesfecho]   = useState<EncaminhamentoAPI | null>(null);
+
+  function recarregarEncaminhamentos(idNum: number) {
+    return encaminhamentosService
+      .listar({ paciente_id: idNum, limit: 30 })
+      .then((r) => setEncaminhamentos(r.data))
+      .catch(() => setEncaminhamentos([]));
+  }
 
   useEffect(() => {
     if (!id) return;
@@ -137,11 +158,13 @@ export function PerfilPaciente() {
     Promise.all([
       pacientesService.buscarPorId(idNum),
       triagensService.listar({ paciente_id: idNum, limit: 20 }).catch(() => ({ data: [] as TriagemResumo[] })),
+      encaminhamentosService.listar({ paciente_id: idNum, limit: 30 }).catch(() => ({ data: [] as EncaminhamentoAPI[] })),
     ])
-      .then(([pacRes, triRes]) => {
+      .then(([pacRes, triRes, encRes]) => {
         if (cancelado) return;
         setPaciente(pacRes.data);
         setTriagens(triRes.data);
+        setEncaminhamentos(encRes.data);
       })
       .catch((err) => {
         if (!cancelado) setErro(err?.response?.data?.message ?? 'Erro ao carregar paciente.');
@@ -234,7 +257,7 @@ export function PerfilPaciente() {
                 <Pencil size={15} strokeWidth={1.8} /> Editar
               </button>
               <button
-                onClick={() => navigate(`/triagem/${paciente.id}/passo1`)}
+                onClick={() => iniciarNovaTriagem(paciente.id)}
                 className="flex items-center gap-1.5 px-5 py-2 rounded-xl bg-acs-coral text-white text-sm font-semibold hover:opacity-90 transition-opacity"
               >
                 <Activity size={15} strokeWidth={2} /> Nova triagem
@@ -324,7 +347,7 @@ export function PerfilPaciente() {
                     As triagens realizadas com este paciente aparecerao aqui.
                   </p>
                   <button
-                    onClick={() => navigate(`/triagem/${paciente.id}/passo1`)}
+                    onClick={() => iniciarNovaTriagem(paciente.id)}
                     className="text-sm text-acs-coral font-semibold hover:underline"
                   >
                     Iniciar primeira triagem &rarr;
@@ -403,41 +426,77 @@ export function PerfilPaciente() {
             <section>
               <div className="flex items-center justify-between mb-3">
                 <h3 className="eyebrow">Encaminhamentos</h3>
-                {encaminhamentos.length > 0 && (
-                  <span className="eyebrow">{encaminhamentos.length} registro(s)</span>
-                )}
+                <div className="flex items-center gap-3">
+                  {encaminhamentos.length > 0 && (
+                    <span className="eyebrow">{encaminhamentos.length} registro(s)</span>
+                  )}
+                  <button
+                    onClick={() => setSheetEncOpen(true)}
+                    className="text-xs font-semibold text-acs-coral hover:underline"
+                  >
+                    Novo +
+                  </button>
+                </div>
               </div>
 
               {encaminhamentos.length === 0 ? (
                 <div className="bg-white rounded-2xl p-6 border-2 border-dashed border-acs-ink-4/30 text-center" style={{ boxShadow: '0 1px 2px rgba(10,20,40,.06)' }}>
                   <FileText size={28} className="text-acs-ink-4 mx-auto mb-2" strokeWidth={1.8} />
                   <p className="text-sm text-acs-ink-3 mb-1">Nenhum encaminhamento registrado</p>
-                  <p className="text-xs text-acs-ink-4">
+                  <p className="text-xs text-acs-ink-4 mb-4">
                     Encaminhamentos para UBS, consultas ou exames aparecerao aqui.
                   </p>
+                  <button
+                    onClick={() => setSheetEncOpen(true)}
+                    className="text-sm text-acs-coral font-semibold hover:underline"
+                  >
+                    Registrar primeiro encaminhamento &rarr;
+                  </button>
                 </div>
               ) : (
                 <div className="space-y-2">
                   {encaminhamentos.map((enc) => {
-                    const st = ENC_STATUS[enc.status] ?? ENC_STATUS.pendente;
+                    const st        = ENC_STATUS[enc.status] ?? ENC_STATUS.pendente;
+                    const tipoLabel = TIPO_ENCAMINHAMENTO_LABEL[enc.tipo];
+                    const dataFmt   = new Date(enc.data_encaminhamento).toLocaleDateString('pt-BR', {
+                      day: '2-digit', month: 'short', year: 'numeric',
+                    });
                     return (
-                      <button
+                      <div
                         key={enc.id}
-                        className="w-full bg-white rounded-2xl p-3.5 border border-acs-line flex items-center gap-3 hover:border-acs-azul-300 transition-colors text-left"
+                        className="bg-white rounded-2xl p-3.5 border border-acs-line"
                         style={{ boxShadow: '0 1px 2px rgba(10,20,40,.06)' }}
                       >
-                        <div className="w-9 h-9 rounded-xl bg-acs-azul-050 flex items-center justify-center flex-shrink-0">
-                          <FileText size={16} className="text-acs-azul-700" strokeWidth={1.8} />
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl bg-acs-azul-050 flex items-center justify-center flex-shrink-0">
+                            <FileText size={16} className="text-acs-azul-700" strokeWidth={1.8} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="font-semibold text-acs-ink text-sm">{tipoLabel}</p>
+                              {enc.vencido === 1 && (
+                                <EncaminhamentoVencidoBadge diasAtraso={enc.dias_atraso ?? null} />
+                              )}
+                            </div>
+                            <p className="text-xs text-acs-ink-3 font-mono">{dataFmt}</p>
+                            {enc.unidade_saude_nome && (
+                              <p className="text-xs text-acs-ink-3 truncate">{enc.unidade_saude_nome}</p>
+                            )}
+                          </div>
+                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wide ${st.bg} ${st.fg}`}>
+                            {st.label}
+                          </span>
                         </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="font-semibold text-acs-ink text-sm">{enc.tipo}</p>
-                          <p className="text-xs text-acs-ink-3 font-mono">{enc.data}</p>
-                        </div>
-                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wide ${st.bg} ${st.fg}`}>
-                          {st.label}
-                        </span>
-                        <ChevronRight size={16} className="text-acs-ink-4 flex-shrink-0" />
-                      </button>
+
+                        {enc.status === 'pendente' && (
+                          <button
+                            onClick={() => setEncDesfecho(enc)}
+                            className="mt-3 w-full py-2 bg-acs-azul text-white rounded-xl text-xs font-semibold hover:bg-acs-azul-700 transition-colors"
+                          >
+                            Registrar Retorno
+                          </button>
+                        )}
+                      </div>
                     );
                   })}
                 </div>
@@ -524,7 +583,7 @@ export function PerfilPaciente() {
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-acs-line p-4 max-w-[800px] mx-auto lg:hidden">
           <div className="flex gap-3">
             <button
-              onClick={() => navigate(`/triagem/${paciente.id}/passo1`)}
+              onClick={() => iniciarNovaTriagem(paciente.id)}
               className="flex-1 py-3 bg-acs-coral text-white rounded-xl font-semibold hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
             >
               <Activity size={18} strokeWidth={2} />
@@ -550,6 +609,23 @@ export function PerfilPaciente() {
             </a>
           </div>
         </div>
+
+        {/* Sheets de encaminhamento */}
+        <RegistrarEncaminhamentoSheet
+          open={sheetEncOpen}
+          onClose={() => setSheetEncOpen(false)}
+          pacienteId={paciente.id}
+          pacienteNome={paciente.nome}
+          onSuccess={() => recarregarEncaminhamentos(paciente.id)}
+        />
+        <RegistrarDesfechoSheet
+          encaminhamento={encDesfecho}
+          onClose={() => setEncDesfecho(null)}
+          onSuccess={() => {
+            setEncDesfecho(null);
+            recarregarEncaminhamentos(paciente.id);
+          }}
+        />
       </div>
     </>
   );

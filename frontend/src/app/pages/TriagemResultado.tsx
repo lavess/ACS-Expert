@@ -3,7 +3,7 @@ import {
   Clock, ChevronDown, ChevronUp, Hospital, ArrowRight,
   Calendar, MessageSquare, Pencil, Check,
 } from 'lucide-react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useParams, Navigate } from 'react-router';
 import { useEffect, useState } from 'react';
 import { useTriagemStore } from '@/store/triagemStore';
 import {
@@ -13,6 +13,8 @@ import {
   corPrioridade,
   type TriagemResultadoAPI,
 } from '@/services/triagensService';
+import { RegistrarEncaminhamentoSheet } from '@/features/encaminhamentos';
+import type { TipoEncaminhamento } from '@/types';
 
 /* ── Priority display meta ─────────────────────────────────── */
 
@@ -111,9 +113,11 @@ function HipoteseCard({
 
 export function TriagemResultado() {
   const navigate = useNavigate();
+  const { pacienteId } = useParams();
   const {
     paciente, tipoVisita, observacao, riskFactors,
-    sintomas, qualifiers, resultado, setResultado, reset,
+    sintomas, qualifiers, resultado, setResultado,
+    triagemConcluida, marcarTriagemConcluida,
   } = useTriagemStore();
 
   const [avaliando, setAvaliando]       = useState(false);
@@ -122,6 +126,8 @@ export function TriagemResultado() {
   const [sucesso, setSucesso]           = useState(false);
   const [mostrarPorque, setMostrarPorque] = useState(false);
   const [expandida, setExpandida]       = useState<string | null>(null);
+  const [triagemSalvaId, setTriagemSalvaId] = useState<number | null>(null);
+  const [sheetEncOpen, setSheetEncOpen] = useState(false);
 
   useEffect(() => {
     if (!paciente) return;
@@ -154,6 +160,13 @@ export function TriagemResultado() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paciente?.id]);
 
+  /* ── Guard: triagem já concluída ───────────────────────── */
+  // Cobre o caso "Voltar" do navegador após salvar — em vez de
+  // mostrar a tela vazia, redireciona silenciosamente para o perfil.
+  if (triagemConcluida && pacienteId) {
+    return <Navigate to={`/paciente/${pacienteId}`} replace />;
+  }
+
   /* ── Guard: no patient ─────────────────────────────────── */
 
   if (!paciente) {
@@ -172,25 +185,41 @@ export function TriagemResultado() {
 
   /* ── Save handler ──────────────────────────────────────── */
 
+  // Salva a triagem (idempotente — não duplica se já salvou nesta tela)
+  // e devolve o id persistido. Usado tanto pelo CTA "Salvar triagem"
+  // quanto pelo "Encaminhar agora".
+  async function salvarTriagemSeNecessario(): Promise<number | null> {
+    if (!paciente) return null;
+    if (triagemSalvaId) return triagemSalvaId;
+
+    const { data } = await triagensService.criar({
+      paciente_id: paciente.id,
+      payload: {
+        faixa_etaria: paciente.faixaEtaria,
+        sexo:         paciente.sexo,
+        sintomas,
+        riskFactors,
+        qualifiers,
+      },
+    });
+    setTriagemSalvaId(data.id);
+    return data.id;
+  }
+
   async function handleSalvar() {
     if (!paciente) return;
     setSalvando(true);
     setErro(null);
     try {
-      await triagensService.criar({
-        paciente_id: paciente.id,
-        payload: {
-          faixa_etaria: paciente.faixaEtaria,
-          sexo:         paciente.sexo,
-          sintomas,
-          riskFactors,
-          qualifiers,
-        },
-      });
+      await salvarTriagemSeNecessario();
       setSucesso(true);
       setTimeout(() => {
-        reset();
-        navigate(`/paciente/${paciente.id}`);
+        // Marca como concluída ao invés de resetar — assim, se o usuário
+        // clicar "Voltar" no navegador após chegar no perfil, os passos
+        // do wizard detectam a flag e redirecionam silenciosamente em
+        // vez de mostrar "Triagem nao iniciada".
+        marcarTriagemConcluida(true);
+        navigate(`/paciente/${paciente.id}`, { replace: true });
       }, 1500);
     } catch (err: any) {
       console.error('[TriagemResultado] Falha ao salvar:', err);
@@ -198,6 +227,22 @@ export function TriagemResultado() {
       const msg    = data?.message ?? err?.message ?? 'Erro ao salvar triagem.';
       const detail = data?.error ? ` (${data.error})` : '';
       setErro(msg + detail);
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  async function handleAbrirEncaminhamento() {
+    if (!paciente) return;
+    setSalvando(true);
+    setErro(null);
+    try {
+      await salvarTriagemSeNecessario();
+      setSheetEncOpen(true);
+    } catch (err: any) {
+      const data = err?.response?.data;
+      const msg  = data?.message ?? 'Não foi possível salvar a triagem para encaminhar.';
+      setErro(msg);
     } finally {
       setSalvando(false);
     }
@@ -359,8 +404,16 @@ export function TriagemResultado() {
           <h3 className="font-display font-semibold text-acs-ink">Proximos passos</h3>
 
           {/* Primary CTA */}
-          <button className="w-full flex items-center justify-center gap-2 py-3.5 bg-acs-coral text-white rounded-xl font-semibold shadow-[0_4px_12px_rgba(231,111,74,.3)] hover:brightness-95 transition-colors animate-pulse-subtle">
-            <Hospital size={18} strokeWidth={2.2} />
+          <button
+            onClick={handleAbrirEncaminhamento}
+            disabled={salvando}
+            className="w-full flex items-center justify-center gap-2 py-3.5 bg-acs-coral text-white rounded-xl font-semibold shadow-[0_4px_12px_rgba(231,111,74,.3)] hover:brightness-95 transition-colors animate-pulse-subtle disabled:opacity-70"
+          >
+            {salvando && !sheetEncOpen ? (
+              <Loader2 size={18} className="animate-spin" />
+            ) : (
+              <Hospital size={18} strokeWidth={2.2} />
+            )}
             <span>Encaminhar agora</span>
             <ArrowRight size={16} />
           </button>
@@ -440,6 +493,34 @@ export function TriagemResultado() {
           </button>
         </div>
       </div>
+
+      {/* ── Bottom sheet de encaminhamento ─────────────────── */}
+      <RegistrarEncaminhamentoSheet
+        open={sheetEncOpen}
+        onClose={() => setSheetEncOpen(false)}
+        pacienteId={paciente.id}
+        pacienteNome={paciente.nome}
+        triagemId={triagemSalvaId ?? undefined}
+        tipoSugerido={
+          (resultado.acao_recomendada === 'urgencia'
+            ? 'urgencia'
+            : 'consulta_medica') as TipoEncaminhamento
+        }
+        motivoSugerido={
+          resultado.top_doenca
+            ? `Suspeita de ${resultado.top_doenca.nome} (${resultado.top_doenca.score}%) — ${aLabel}.`
+            : aLabel
+        }
+        onSuccess={() => {
+          // Encaminhamento criado: marca a triagem como concluída e leva
+          // ao perfil. Replace evita que o "Voltar" do navegador
+          // recoloque o usuário na tela de resultado já vazia.
+          setTimeout(() => {
+            marcarTriagemConcluida(true);
+            navigate(`/paciente/${paciente.id}`, { replace: true });
+          }, 950);
+        }}
+      />
     </div>
   );
 }
