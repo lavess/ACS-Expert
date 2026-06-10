@@ -5,6 +5,7 @@ import { RiskBadge } from '../components/RiskBadge';
 import { useAuthStore } from '@/store/authStore';
 import { usuariosService, type UsuarioAPI } from '@/services/usuariosService';
 import { pacientesService, type PacienteListagem } from '@/services/pacientesService';
+import { usePacientesFiltradosPorPerfil } from '@/hooks/usePacientesFiltradosPorPerfil';
 
 function saudacao(nomeCompleto?: string) {
   const hora = new Date().getHours();
@@ -43,12 +44,13 @@ export function Dashboard() {
   const subtitulo = usuario?.microarea_nome
     ?? (usuario?.municipio_nome ? `${PERFIL_LABEL[perfil ?? ''] ?? perfil} — ${usuario.municipio_nome}` : PERFIL_LABEL[perfil ?? ''] ?? '');
 
+  const filtrosPerfil = usePacientesFiltradosPorPerfil();
   const [totalPacientes, setTotalPacientes] = useState(0);
   const [urgentes, setUrgentes] = useState(0);
   const [pacientesAlerta, setPacientesAlerta] = useState<PacienteListagem[]>([]);
 
   useEffect(() => {
-    pacientesService.listar({ ativo: 1 })
+    pacientesService.listar({ ...filtrosPerfil, ativo: 1 })
       .then(({ data }) => {
         setTotalPacientes(data.length);
         const altos = data.filter(p => p.nivel_risco === 'alto');

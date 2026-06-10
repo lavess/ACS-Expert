@@ -163,7 +163,10 @@ export function EditarPaciente() {
         setNumero(paciente.numero ?? '');
         setComplemento(paciente.complemento ?? '');
         setBairro(paciente.bairro ?? '');
-        setCep(paciente.cep ?? '');
+        // Aplica máscara ao carregar o CEP salvo
+        const cepDigits = (paciente.cep ?? '').replace(/\D/g, '').slice(0, 8);
+        const cepMask = cepDigits.replace(/(\d{5})(\d)/, '$1-$2');
+        setCep(cepMask);
         setMicroareaId(paciente.microarea_id ? String(paciente.microarea_id) : '');
         setNomeReferencia(paciente.nome_referencia ?? '');
 
@@ -186,6 +189,30 @@ export function EditarPaciente() {
     carregar();
     return () => { cancelado = true; };
   }, [id, usuarioAuth?.municipioId]);
+
+  // Preenchimento automático pelo CEP via ViaCEP
+  useEffect(() => {
+    const digits = cep.replace(/\D/g, '');
+    if (digits.length !== 8) return;
+    let cancelado = false;
+    fetch(`https://viacep.com.br/ws/${digits}/json/`)
+      .then(r => r.json())
+      .then(d => {
+        if (cancelado || d.erro) return;
+        if (d.logradouro) setLogradouro(d.logradouro);
+        if (d.bairro)     setBairro(d.bairro);
+      })
+      .catch(() => {});
+    return () => { cancelado = true; };
+  }, [cep]);
+
+  // Seleção automática de microárea pelo bairro
+  useEffect(() => {
+    if (!bairro || microareaId) return;
+    const bairroNorm = bairro.toLowerCase().trim();
+    const match = microareas.find(m => m.nome.toLowerCase().includes(bairroNorm));
+    if (match) setMicroareaId(String(match.id));
+  }, [bairro, microareas]);
 
   const toggleComorbidade = (c: Comorbidade) => {
     setComorbidadesSel((prev) => {
@@ -398,7 +425,7 @@ export function EditarPaciente() {
                   <input type="text" value={bairro} onChange={(e) => setBairro(e.target.value)} placeholder="Ex: Centro" className={INPUT_CLS} />
                 </FormField>
                 <FormField label="CEP">
-                  <input type="text" value={cep} onChange={(e) => setCep(e.target.value)} placeholder="00000-000" className={INPUT_CLS} />
+                  <input type="text" value={cep} onChange={(e) => { const d = e.target.value.replace(/\D/g, '').slice(0, 8); const m = d.replace(/(\d{5})(\d)/, '$1-$2'); setCep(m); }} placeholder="00000-000" maxLength={9} inputMode="numeric" className={INPUT_CLS} />
                 </FormField>
               </div>
 

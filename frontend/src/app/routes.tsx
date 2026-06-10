@@ -17,154 +17,63 @@ import { Usuarios } from './pages/Usuarios';
 import { NovoUsuario } from './pages/NovoUsuario';
 import { EditarUsuario } from './pages/EditarUsuario';
 import { ResponsiveLayout } from './components/ResponsiveLayout';
+import { RequireAuth } from './components/RequireAuth';
+
+function AuthLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <RequireAuth>
+      <ResponsiveLayout>{children}</ResponsiveLayout>
+    </RequireAuth>
+  );
+}
+
+function GestorLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <RequireAuth perfis={['gestor']}>
+      <ResponsiveLayout>{children}</ResponsiveLayout>
+    </RequireAuth>
+  );
+}
+
+function GestorCoordenadorLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <RequireAuth perfis={['gestor', 'coordenador']}>
+      <ResponsiveLayout>{children}</ResponsiveLayout>
+    </RequireAuth>
+  );
+}
 
 export const router = createBrowserRouter([
+  // Rotas públicas
   {
     path: '/',
-    element: (
-      <ResponsiveLayout showNav={false}>
-        <Login />
-      </ResponsiveLayout>
-    )
+    element: <ResponsiveLayout showNav={false}><Login /></ResponsiveLayout>
   },
   {
     path: '/login',
-    element: (
-      <ResponsiveLayout showNav={false}>
-        <Login />
-      </ResponsiveLayout>
-    )
+    element: <ResponsiveLayout showNav={false}><Login /></ResponsiveLayout>
   },
-  {
-    path: '/dashboard',
-    element: (
-      <ResponsiveLayout>
-        <Dashboard />
-      </ResponsiveLayout>
-    )
-  },
-  {
-    path: '/pacientes',
-    element: (
-      <ResponsiveLayout>
-        <Pacientes />
-      </ResponsiveLayout>
-    )
-  },
-  {
-    path: '/paciente/:id',
-    element: (
-      <ResponsiveLayout>
-        <PerfilPaciente />
-      </ResponsiveLayout>
-    )
-  },
-  {
-    path: '/novo-paciente',
-    element: (
-      <ResponsiveLayout>
-        <NovoPaciente />
-      </ResponsiveLayout>
-    )
-  },
-  {
-    path: '/paciente/:id/editar',
-    element: (
-      <ResponsiveLayout>
-        <EditarPaciente />
-      </ResponsiveLayout>
-    )
-  },
-  {
-    path: '/triagem/:pacienteId/passo1',
-    element: (
-      <ResponsiveLayout>
-        <TriagemPasso1 />
-      </ResponsiveLayout>
-    )
-  },
-  {
-    path: '/triagem/:pacienteId/passo2',
-    element: (
-      <ResponsiveLayout>
-        <TriagemPasso2 />
-      </ResponsiveLayout>
-    )
-  },
-  {
-    path: '/triagem/:pacienteId/resultado',
-    element: (
-      <ResponsiveLayout>
-        <TriagemResultado />
-      </ResponsiveLayout>
-    )
-  },
-  {
-    path: '/triagem/:id/detalhe',
-    element: (
-      <ResponsiveLayout>
-        <DetalheTriagem />
-      </ResponsiveLayout>
-    )
-  },
-  {
-    path: '/agenda',
-    element: (
-      <ResponsiveLayout>
-        <Agenda />
-      </ResponsiveLayout>
-    )
-  },
-  {
-    path: '/encaminhamentos',
-    element: (
-      <ResponsiveLayout>
-        <Encaminhamentos />
-      </ResponsiveLayout>
-    )
-  },
-  {
-    path: '/alertas',
-    element: (
-      <ResponsiveLayout>
-        <Alertas />
-      </ResponsiveLayout>
-    )
-  },
-  {
-    path: '/perfil',
-    element: (
-      <ResponsiveLayout>
-        <Perfil />
-      </ResponsiveLayout>
-    )
-  },
-  {
-    path: '/usuarios',
-    element: (
-      <ResponsiveLayout>
-        <Usuarios />
-      </ResponsiveLayout>
-    )
-  },
-  {
-    path: '/novo-usuario',
-    element: (
-      <ResponsiveLayout>
-        <NovoUsuario />
-      </ResponsiveLayout>
-    )
-  },
-  {
-    path: '/usuario/:id',
-    element: (
-      <ResponsiveLayout>
-        <EditarUsuario />
-      </ResponsiveLayout>
-    )
-  },
-  {
-    path: '*',
-    element: <Navigate to="/" replace />
-  }
+
+  // Rotas autenticadas — todos os perfis
+  { path: '/dashboard',                    element: <AuthLayout><Dashboard /></AuthLayout> },
+  { path: '/pacientes',                    element: <AuthLayout><Pacientes /></AuthLayout> },
+  { path: '/paciente/:id',                 element: <AuthLayout><PerfilPaciente /></AuthLayout> },
+  { path: '/novo-paciente',               element: <AuthLayout><NovoPaciente /></AuthLayout> },
+  { path: '/paciente/:id/editar',          element: <AuthLayout><EditarPaciente /></AuthLayout> },
+  { path: '/triagem/:pacienteId/passo1',   element: <AuthLayout><TriagemPasso1 /></AuthLayout> },
+  { path: '/triagem/:pacienteId/passo2',   element: <AuthLayout><TriagemPasso2 /></AuthLayout> },
+  { path: '/triagem/:pacienteId/resultado',element: <AuthLayout><TriagemResultado /></AuthLayout> },
+  { path: '/triagem/:id/detalhe',          element: <AuthLayout><DetalheTriagem /></AuthLayout> },
+  { path: '/agenda',                       element: <AuthLayout><Agenda /></AuthLayout> },
+  { path: '/encaminhamentos',              element: <AuthLayout><Encaminhamentos /></AuthLayout> },
+  { path: '/alertas',                      element: <AuthLayout><Alertas /></AuthLayout> },
+  { path: '/perfil',                       element: <AuthLayout><Perfil /></AuthLayout> },
+
+  // Rotas exclusivas de gestor e coordenador
+  { path: '/usuarios',     element: <GestorCoordenadorLayout><Usuarios /></GestorCoordenadorLayout> },
+  { path: '/novo-usuario', element: <GestorLayout><NovoUsuario /></GestorLayout> },
+  { path: '/usuario/:id',  element: <GestorCoordenadorLayout><EditarUsuario /></GestorCoordenadorLayout> },
+
+  // Catch-all
+  { path: '*', element: <Navigate to="/" replace /> }
 ]);

@@ -20,6 +20,7 @@ import {
   type PacienteListagem,
 } from '@/services/pacientesService';
 import { EncaminhamentoVencidoBadge } from '@/features/encaminhamentos';
+import { usePacientesFiltradosPorPerfil } from '@/hooks/usePacientesFiltradosPorPerfil';
 
 type FiltroId = 'todos' | 'alto' | 'cronicos' | 'gestantes' | 'sem-visita' | 'alertas';
 type SortOption = 'risco' | 'sem-visita' | 'nome';
@@ -38,6 +39,7 @@ const RISK_ORDER: Record<string, number> = {
 
 export function Pacientes() {
   const navigate = useNavigate();
+  const filtrosPerfil = usePacientesFiltradosPorPerfil();
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState<FiltroId>('todos');
   const [sort, setSort] = useState<SortOption>('risco');
@@ -46,15 +48,16 @@ export function Pacientes() {
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
-  // Stats computed from full list
+  // Stats computed from full list (only when showing "todos")
   const stats = useMemo(() => {
-    const total = pacientes.length;
-    const alto = pacientes.filter((p) => p.nivel_risco === 'alto').length;
-    const alertas = pacientes.filter(
+    const base = activeFilter === 'todos' ? pacientes : pacientes;
+    const total = base.length;
+    const alto = base.filter((p) => p.nivel_risco === 'alto').length;
+    const alertas = base.filter(
       (p) => (p.alertas_pendentes ?? 0) > 0 || (p.total_encaminhamentos_vencidos ?? 0) > 0
     ).length;
     return { total, alto, alertas };
-  }, [pacientes]);
+  }, [pacientes, activeFilter]);
 
   const filters: { id: FiltroId; label: string; count?: number }[] = [
     { id: 'todos', label: 'Todos', count: stats.total },
@@ -79,6 +82,7 @@ export function Pacientes() {
       setErro(null);
       try {
         const { data } = await pacientesService.listar({
+          ...filtrosPerfil,
           busca: debouncedBusca || undefined,
           nivel_risco: activeFilter === 'alto' ? 'alto' : undefined,
         });
@@ -99,7 +103,11 @@ export function Pacientes() {
     let filtered = [...pacientes];
 
     // Filter
-    if (activeFilter === 'sem-visita') {
+    if (activeFilter === 'cronicos') {
+      filtered = filtered.filter((p) => !!p.tem_comorbidade);
+    } else if (activeFilter === 'gestantes') {
+      filtered = filtered.filter((p) => !!p.is_gestante);
+    } else if (activeFilter === 'sem-visita') {
       const limite = new Date();
       limite.setDate(limite.getDate() - 30);
       filtered = filtered.filter((p) => {

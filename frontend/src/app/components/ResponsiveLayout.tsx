@@ -1,6 +1,7 @@
 import { ReactNode, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router'
-import { Menu } from 'lucide-react'
+import { Menu, X, Heart, MapPin, Users, ClipboardList, ShieldCheck } from 'lucide-react'
+import { TourAjuda } from './TourAjuda'
 import { BottomNav } from './BottomNav'
 import {
   SideNav,
@@ -29,6 +30,8 @@ export function ResponsiveLayout({ children, showNav = true }: ResponsiveLayoutP
   const isDesktop = useMediaQuery('(min-width: 1024px)')
 
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [sobreOpen, setSobreOpen]   = useState(false)
+  const [tourOpen, setTourOpen]     = useState(false)
 
   const acsUser = useCurrentAcs()
   const sync    = useSyncStatus()
@@ -42,6 +45,8 @@ export function ResponsiveLayout({ children, showNav = true }: ResponsiveLayoutP
   const current = pathToNavId(location.pathname) ?? undefined
 
   const handleNavigate = (id: NavId) => {
+    if (id === 'sobre') { setSobreOpen(true); return }
+    if (id === 'ajuda') { setTourOpen(true);  return }
     const path = NAV_ID_TO_PATH[id]
     if (path) navigate(path)
   }
@@ -106,6 +111,92 @@ export function ResponsiveLayout({ children, showNav = true }: ResponsiveLayoutP
       {!isLoginPage && showNav && (
         <div className="lg:hidden">
           <BottomNav />
+        </div>
+      )}
+
+      {/* Tour de ajuda */}
+      {tourOpen && <TourAjuda onClose={() => setTourOpen(false)} />}
+
+      {/* Modal Sobre o app */}
+      {sobreOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-end lg:items-center justify-center"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Sobre o ACS Expert"
+        >
+          <div className="absolute inset-0 bg-black/40" onClick={() => setSobreOpen(false)} />
+          <div className="relative z-10 bg-white w-full max-w-md rounded-t-3xl lg:rounded-2xl shadow-[0_20px_60px_rgba(10,20,40,.25)] overflow-hidden">
+            {/* Header */}
+            <div className="bg-acs-azul px-6 pt-6 pb-8">
+              <button
+                onClick={() => setSobreOpen(false)}
+                className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+                aria-label="Fechar"
+              >
+                <X size={16} strokeWidth={2.2} />
+              </button>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-12 h-12 rounded-[14px] bg-white/15 flex items-center justify-center">
+                  <Heart size={24} className="text-white" strokeWidth={1.8} />
+                </div>
+                <div>
+                  <h2 className="font-display font-bold text-white text-lg leading-tight">ACS Expert</h2>
+                  <p className="font-mono text-[11px] text-white/70 uppercase tracking-[.14em]">Versão 1.0</p>
+                </div>
+              </div>
+              <p className="text-white/90 text-sm leading-relaxed">
+                Ferramenta digital para Agentes Comunitários de Saúde do SUS, desenvolvida para apoiar o trabalho de campo no território.
+              </p>
+            </div>
+
+            {/* Features */}
+            <div className="px-6 py-5 space-y-4">
+              <div className="flex gap-3">
+                <div className="w-9 h-9 rounded-xl bg-acs-azul-100 flex items-center justify-center flex-shrink-0">
+                  <Users size={18} className="text-acs-azul" strokeWidth={1.8} />
+                </div>
+                <div>
+                  <p className="font-semibold text-acs-ink text-sm">Gestão de pacientes</p>
+                  <p className="text-xs text-acs-ink-3 leading-relaxed">Cadastro completo de famílias e indivíduos com histórico de saúde, comorbidades e acompanhamento longitudinal.</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <div className="w-9 h-9 rounded-xl bg-acs-verde/15 flex items-center justify-center flex-shrink-0">
+                  <MapPin size={18} className="text-acs-verde" strokeWidth={1.8} />
+                </div>
+                <div>
+                  <p className="font-semibold text-acs-ink text-sm">Agenda e rotas de visita</p>
+                  <p className="text-xs text-acs-ink-3 leading-relaxed">Planejamento diário de visitas domiciliares com mapa interativo, priorização por risco e integração com Google Maps e Waze.</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <div className="w-9 h-9 rounded-xl bg-acs-amar/20 flex items-center justify-center flex-shrink-0">
+                  <ClipboardList size={18} className="text-acs-amar" strokeWidth={1.8} />
+                </div>
+                <div>
+                  <p className="font-semibold text-acs-ink text-sm">Triagens e encaminhamentos</p>
+                  <p className="text-xs text-acs-ink-3 leading-relaxed">Registro de triagens com cálculo automático de risco, controle de encaminhamentos a serviços de saúde e alertas por SLA vencido.</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <div className="w-9 h-9 rounded-xl bg-acs-coral/15 flex items-center justify-center flex-shrink-0">
+                  <ShieldCheck size={18} className="text-acs-coral" strokeWidth={1.8} />
+                </div>
+                <div>
+                  <p className="font-semibold text-acs-ink text-sm">Controle por perfil de acesso</p>
+                  <p className="text-xs text-acs-ink-3 leading-relaxed">Perfis distintos para ACS, Coordenador e Gestor, com visibilidade e permissões adequadas a cada função na equipe de saúde.</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 pb-6 pt-1 border-t border-acs-line">
+              <p className="text-[11px] text-acs-ink-3 text-center">
+                Desenvolvido para apoiar o SUS · Joinville – SC
+              </p>
+            </div>
+          </div>
         </div>
       )}
 

@@ -1,27 +1,15 @@
 import { MapPin, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router';
-import { MapaVisitas } from '../components/MapaVisitas';
+import { MapaVisitas, type Visita } from '../components/MapaVisitas';
 import { useState, useEffect } from 'react';
 import { RiskBadge } from '../components/RiskBadge';
 import { pacientesService, type PacienteListagem } from '@/services/pacientesService';
+import { usePacientesFiltradosPorPerfil } from '@/hooks/usePacientesFiltradosPorPerfil';
+import { geocodeCep } from '@/hooks/useGeocodeCep';
 
 type Prioridade = 'urgent' | 'warning' | 'low';
 
-interface Visita {
-  id: number;
-  ordem: number;
-  prioridade: Prioridade;
-  paciente: string;
-  endereco: string;
-  distancia: string;
-  razao: string;
-  status: string;
-  lat: number;
-  lng: number;
-  distanciaMetros: number;
-}
-
-function pacienteParaVisita(p: PacienteListagem, ordem: number): Visita {
+async function pacienteParaVisita(p: PacienteListagem, ordem: number): Promise<Visita> {
   const prioridade: Prioridade =
     p.nivel_risco === 'alto' ? 'urgent' :
     p.nivel_risco === 'medio' ? 'warning' : 'low';
@@ -36,7 +24,10 @@ function pacienteParaVisita(p: PacienteListagem, ordem: number): Visita {
       : 'Visita de rotina';
 
   const enderecoParts = [p.logradouro, p.numero].filter(Boolean);
-  const endereco = enderecoParts.length > 0 ? enderecoParts.join(', ') : 'Endereco nao informado';
+  const bairroPart = p.bairro ? ` — ${p.bairro}` : '';
+  const endereco = enderecoParts.length > 0 ? enderecoParts.join(', ') + bairroPart : 'Endereco nao informado';
+
+  const coords = await geocodeCep(p.cep ?? '');
 
   return {
     id: p.id,
@@ -47,8 +38,8 @@ function pacienteParaVisita(p: PacienteListagem, ordem: number): Visita {
     distancia: '—',
     razao,
     status: 'pendente',
-    lat: -23.5505 + (Math.random() - 0.5) * 0.02,
-    lng: -46.6333 + (Math.random() - 0.5) * 0.02,
+    lat: coords.lat,
+    lng: coords.lng,
     distanciaMetros: 300 + Math.floor(Math.random() * 1200),
   };
 }
@@ -57,18 +48,22 @@ export function Agenda() {
   const navigate = useNavigate();
   const [visualizacao, setVisualizacao] = useState<'lista' | 'mapa'>('lista');
   const [rotaOtimizada, setRotaOtimizada] = useState(false);
+  const filtrosPerfil = usePacientesFiltradosPorPerfil();
   const [visitas, setVisitas] = useState<Visita[]>([]);
   const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
     async function carregar() {
       try {
-        const { data } = await pacientesService.listar({ ativo: 1 });
+        const { data } = await pacientesService.listar({ ...filtrosPerfil, ativo: 1 });
         const ordenados = [...data].sort((a, b) => {
           const ordem = { alto: 0, medio: 1, baixo: 2 };
           return (ordem[a.nivel_risco] ?? 2) - (ordem[b.nivel_risco] ?? 2);
         });
-        setVisitas(ordenados.map((p, i) => pacienteParaVisita(p, i + 1)));
+        const visitasGeocodificadas = await Promise.all(
+          ordenados.map((p, i) => pacienteParaVisita(p, i + 1))
+        );
+        setVisitas(visitasGeocodificadas);
       } catch {
         setVisitas([]);
       } finally {
@@ -78,27 +73,55 @@ export function Agenda() {
     carregar();
   }, []);
 
-  const otimizarRota = () => {
-    const visitasPendentes = visitas.filter(v => v.status === 'pendente');
-    const visitasRealizadas = visitas.filter(v => v.status === 'realizada');
+  const [menuRotaAberto, setMenuRotaAberto] = useState(false);
 
-    const visitasOrdenadas = visitasPendentes.sort((a, b) => {
-      const prioridadeOrder = { urgent: 0, warning: 1, low: 2 };
-      const diffPrioridade = prioridadeOrder[a.prioridade] - prioridadeOrder[b.prioridade];
-      if (diffPrioridade !== 0) return diffPrioridade;
-      return a.distanciaMetros - b.distanciaMetros;
+  // Ordena pendentes por prioridade e distância
+  const visitasOrdenadas = () => {
+    const pendentes = [...visitas.filter(v => v.status === 'pendente')].sort((a, b) => {
+      const ord = { urgent: 0, warning: 1, low: 2 };
+      const d = ord[a.prioridade] - ord[b.prioridade];
+      return d !== 0 ? d : a.distanciaMetros - b.distanciaMetros;
+    });
+    const realizadas = visitas.filter(v => v.status === 'realizada');
+    return [
+      ...pendentes.map((v, i) => ({ ...v, ordem: i + 1 })),
+      ...realizadas.map((v, i) => ({ ...v, ordem: pendentes.length + i + 1 })),
+    ];
+  };
+
+  const abrirNoMapa = (app: 'google' | 'waze') => {
+    const pendentes = [...visitas.filter(v => v.status === 'pendente')].sort((a, b) => {
+      const ord = { urgent: 0, warning: 1, low: 2 };
+      const d = ord[a.prioridade] - ord[b.prioridade];
+      return d !== 0 ? d : a.distanciaMetros - b.distanciaMetros;
     });
 
-    const visitasComNovaOrdem = [
-      ...visitasOrdenadas.map((v, idx) => ({ ...v, ordem: idx + 1 })),
-      ...visitasRealizadas.map((v, idx) => ({ ...v, ordem: visitasOrdenadas.length + idx + 1 }))
-    ];
+    if (!pendentes.length) return;
 
-    setVisitas(visitasComNovaOrdem);
+    if (app === 'google') {
+      // Google Maps: origem = atual, destino = último, intermediários = waypoints
+      const destino = pendentes[pendentes.length - 1];
+      const waypoints = pendentes.slice(0, -1);
+      const dest = `${destino.lat},${destino.lng}`;
+      const wps = waypoints.map(v => `${v.lat},${v.lng}`).join('|');
+      const url = `https://www.google.com/maps/dir/?api=1&destination=${dest}${wps ? `&waypoints=${wps}` : ''}&travelmode=driving`;
+      window.open(url, '_blank');
+    } else {
+      // Waze suporta apenas um destino — abre o primeiro da lista (mais urgente)
+      const primeiro = pendentes[0];
+      const url = `https://waze.com/ul?ll=${primeiro.lat},${primeiro.lng}&navigate=yes`;
+      window.open(url, '_blank');
+    }
+
+    // Atualiza ordem no mapa interno também
+    setVisitas(visitasOrdenadas());
     setRotaOtimizada(true);
     setVisualizacao('mapa');
+    setMenuRotaAberto(false);
     setTimeout(() => setRotaOtimizada(false), 5000);
   };
+
+  const otimizarRota = () => setMenuRotaAberto(v => !v);
 
   const riskLevelMap: Record<string, 'urgent' | 'warning' | 'low'> = {
     urgent: 'urgent', warning: 'warning', low: 'low',
@@ -120,7 +143,7 @@ export function Agenda() {
         <div className="flex items-center justify-between mb-4">
           <div className="pl-12 lg:pl-0">
             <h2 className="font-display font-bold text-acs-ink">Agenda do Dia</h2>
-            <p className="text-sm text-acs-ink-3">19 de marco de 2026</p>
+            <p className="text-sm text-acs-ink-3">{new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
           </div>
 
           <div className="flex gap-1 bg-acs-paper-2 rounded-xl p-1">
@@ -266,9 +289,45 @@ export function Agenda() {
         </div>
       )}
 
+      {/* Menu de app de navegação */}
+      {menuRotaAberto && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setMenuRotaAberto(false)} />
+          <div className="fixed bottom-36 right-8 z-50 bg-white rounded-2xl shadow-[0_8px_32px_rgba(10,20,40,.18)] border border-acs-line overflow-hidden w-52">
+            <div className="px-4 py-2.5 border-b border-acs-line">
+              <p className="text-xs font-semibold text-acs-ink-3 uppercase tracking-wide">Abrir rota em</p>
+            </div>
+            <button
+              onClick={() => abrirNoMapa('google')}
+              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-acs-paper transition-colors text-left"
+            >
+              <div className="w-8 h-8 rounded-lg bg-white border border-acs-line flex items-center justify-center flex-shrink-0">
+                <svg viewBox="0 0 48 48" width="20" height="20"><path fill="#4285F4" d="M24 4C13 4 4 13 4 24s9 20 20 20 20-9 20-20S35 4 24 4z"/><path fill="#fff" d="M24 12c-6.6 0-12 5.4-12 12 0 4.8 2.8 8.9 6.9 10.9L24 36l5.1-1.1C33.2 32.9 36 28.8 36 24c0-6.6-5.4-12-12-12z"/><path fill="#4285F4" d="M24 18a6 6 0 100 12A6 6 0 0024 18z"/></svg>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-acs-ink">Google Maps</p>
+                <p className="text-xs text-acs-ink-3">Rota com todos os pontos</p>
+              </div>
+            </button>
+            <button
+              onClick={() => abrirNoMapa('waze')}
+              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-acs-paper transition-colors text-left"
+            >
+              <div className="w-8 h-8 rounded-lg bg-[#05C8F7] flex items-center justify-center flex-shrink-0">
+                <svg viewBox="0 0 48 48" width="20" height="20"><circle cx="24" cy="22" r="16" fill="#fff"/><circle cx="19" cy="20" r="2.5" fill="#333"/><circle cx="29" cy="20" r="2.5" fill="#333"/><path d="M19 26c1.2 2 8.8 2 10 0" stroke="#333" strokeWidth="1.5" strokeLinecap="round" fill="none"/></svg>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-acs-ink">Waze</p>
+                <p className="text-xs text-acs-ink-3">Primeiro destino urgente</p>
+              </div>
+            </button>
+          </div>
+        </>
+      )}
+
       {/* FAB */}
       <button
-        className="fixed bottom-24 right-8 flex items-center gap-2 px-4 py-3 bg-acs-coral rounded-2xl shadow-[0_8px_20px_rgba(231,111,74,.45)] text-white font-semibold hover:brightness-95 transition-colors"
+        className="fixed bottom-24 right-8 flex items-center gap-2 px-4 py-3 bg-acs-coral rounded-2xl shadow-[0_8px_20px_rgba(231,111,74,.45)] text-white font-semibold hover:brightness-95 transition-colors z-30"
         onClick={otimizarRota}
       >
         <MapPin size={20} />
@@ -276,7 +335,7 @@ export function Agenda() {
       </button>
 
       {rotaOtimizada && (
-        <div className="fixed bottom-36 right-8 px-4 py-2 bg-acs-verde text-white rounded-full shadow-lg font-semibold text-sm animate-slide-up flex items-center gap-2">
+        <div className="fixed bottom-36 right-8 px-4 py-2 bg-acs-verde text-white rounded-full shadow-lg font-semibold text-sm animate-slide-up flex items-center gap-2 z-30">
           <span>✓</span>
           Rota Otimizada!
         </div>

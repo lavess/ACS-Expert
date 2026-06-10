@@ -68,7 +68,7 @@ async function listar(req, res) {
       }
     }
 
-    const { busca, nivel_risco, microarea_id, acs_responsavel_id, ativo } = req.query;
+    const { busca, nivel_risco, microarea_id, acs_responsavel_id, ativo, comorbidade } = req.query;
 
     let sql = `
       SELECT
@@ -82,7 +82,9 @@ async function listar(req, res) {
         d.microarea_id,
         ma.nome AS microarea_nome,
         COALESCE(ev.total, 0) AS total_encaminhamentos_vencidos,
-        COALESCE(al.total, 0) AS alertas_pendentes
+        COALESCE(al.total, 0) AS alertas_pendentes,
+        IF(EXISTS(SELECT 1 FROM paciente_comorbidades pc WHERE pc.paciente_id = p.id AND pc.comorbidade = 'gestante'), 1, 0) AS is_gestante,
+        IF(EXISTS(SELECT 1 FROM paciente_comorbidades pc WHERE pc.paciente_id = p.id AND pc.comorbidade != 'gestante'), 1, 0) AS tem_comorbidade
       FROM pacientes p
       LEFT JOIN domicilios d  ON p.domicilio_id = d.id
       LEFT JOIN microareas ma ON d.microarea_id = ma.id
@@ -127,6 +129,10 @@ async function listar(req, res) {
       sql += ' AND (p.nome LIKE ? OR p.cpf LIKE ? OR p.cns LIKE ?)';
       const like = `%${busca}%`;
       params.push(like, like, like);
+    }
+    if (comorbidade) {
+      sql += ' AND EXISTS (SELECT 1 FROM paciente_comorbidades pc WHERE pc.paciente_id = p.id AND pc.comorbidade = ?)';
+      params.push(comorbidade);
     }
 
     sql += ' ORDER BY p.nome ASC LIMIT 500';

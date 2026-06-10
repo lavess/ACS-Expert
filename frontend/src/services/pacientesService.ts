@@ -67,6 +67,8 @@ export interface PacienteListagem {
   total_encaminhamentos_vencidos?: number
   /** Alertas não-resolvidos vinculados ao paciente. */
   alertas_pendentes?: number
+  is_gestante?: number
+  tem_comorbidade?: number
 }
 
 export interface PacienteDetalhe extends PacienteListagem {
@@ -87,6 +89,7 @@ export interface ListarPacientesParams {
   microarea_id?: number
   acs_responsavel_id?: number
   ativo?: boolean
+  comorbidade?: string
 }
 
 export const pacientesService = {

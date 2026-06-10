@@ -127,7 +127,7 @@ function CardEncaminhamento({
               <EncaminhamentoVencidoBadge diasAtraso={enc.dias_atraso ?? null} />
             )}
             <span className="text-xs text-acs-ink-3 font-mono">
-              {formatarData(enc.data_encaminhamento)}
+              {formatarData(enc.data_prevista ?? enc.data_encaminhamento)}
             </span>
           </div>
         </div>

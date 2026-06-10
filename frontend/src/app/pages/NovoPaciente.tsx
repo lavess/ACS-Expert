@@ -1,8 +1,8 @@
-import { ArrowLeft, Loader2, AlertCircle, Check, User, Home, Heart, Stethoscope, ArrowRight } from 'lucide-react';
+import { ArrowLeft, Loader2, AlertCircle, Check, User, Home, Heart, Stethoscope, ArrowRight, UserCheck } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { useEffect, useState, useMemo } from 'react';
 import { useAuthStore } from '@/store/authStore';
-import { pacientesService, type CriarPacientePayload } from '@/services/pacientesService';
+import { pacientesService, type CriarPacientePayload, type PacienteListagem } from '@/services/pacientesService';
 import { microareasService, type MicroareaAPI } from '@/services/usuariosService';
 import type { Comorbidade, Sexo } from '@/types';
 
@@ -115,6 +115,10 @@ export function NovoPaciente() {
   // Microareas
   const [microareas, setMicroareas] = useState<MicroareaAPI[]>([]);
 
+  // Busca por CPF já cadastrado
+  const [pacienteExistente, setPacienteExistente] = useState<PacienteListagem | null>(null);
+  const [buscandoCpf, setBuscandoCpf] = useState(false);
+
   // Submit
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -130,6 +134,49 @@ export function NovoPaciente() {
     }
     carregarMicroareas();
   }, [usuarioAuth?.municipioId]);
+
+  // Busca paciente existente pelo CPF
+  useEffect(() => {
+    const digits = cpf.replace(/\D/g, '');
+    setPacienteExistente(null);
+    if (digits.length !== 11) return;
+    let cancelado = false;
+    setBuscandoCpf(true);
+    pacientesService.listar({ busca: digits, ativo: undefined })
+      .then(({ data }) => {
+        if (cancelado) return;
+        const encontrado = data.find(p => p.cpf && p.cpf.replace(/\D/g, '') === digits);
+        setPacienteExistente(encontrado ?? null);
+        if (encontrado) setNome(encontrado.nome);
+      })
+      .catch(() => {})
+      .finally(() => { if (!cancelado) setBuscandoCpf(false); });
+    return () => { cancelado = true; };
+  }, [cpf]);
+
+  // Preenchimento automático pelo CEP via ViaCEP
+  useEffect(() => {
+    const digits = cep.replace(/\D/g, '');
+    if (digits.length !== 8) return;
+    let cancelado = false;
+    fetch(`https://viacep.com.br/ws/${digits}/json/`)
+      .then(r => r.json())
+      .then(d => {
+        if (cancelado || d.erro) return;
+        if (d.logradouro) setLogradouro(d.logradouro);
+        if (d.bairro)     setBairro(d.bairro);
+      })
+      .catch(() => {});
+    return () => { cancelado = true; };
+  }, [cep]);
+
+  // Seleção automática de microárea pelo bairro
+  useEffect(() => {
+    if (!bairro || microareaId) return;
+    const bairroNorm = bairro.toLowerCase().trim();
+    const match = microareas.find(m => m.nome.toLowerCase().includes(bairroNorm));
+    if (match) setMicroareaId(String(match.id));
+  }, [bairro, microareas]);
 
   const toggleComorbidade = (c: Comorbidade) => {
     setComorbidadesSel((prev) => {
@@ -279,7 +326,28 @@ export function NovoPaciente() {
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <FormField label="CPF" hint="Opcional">
-                  <input type="text" value={cpf} onChange={(e) => { const d = e.target.value.replace(/\D/g, '').slice(0, 11); const m = d.replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})$/, '$1-$2'); setCpf(m); }} placeholder="000.000.000-00" maxLength={14} inputMode="numeric" className={INPUT_CLS} />
+                  <div className="relative">
+                    <input type="text" value={cpf} onChange={(e) => { const d = e.target.value.replace(/\D/g, '').slice(0, 11); const m = d.replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})$/, '$1-$2'); setCpf(m); }} placeholder="000.000.000-00" maxLength={14} inputMode="numeric" className={INPUT_CLS + (pacienteExistente ? ' border-acs-amar' : '')} />
+                    {buscandoCpf && (
+                      <Loader2 size={16} className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-acs-ink-3" />
+                    )}
+                  </div>
+                  {pacienteExistente && (
+                    <div className="mt-2 flex items-start gap-2 bg-acs-amar-100 border border-[#F2B134] rounded-xl p-3">
+                      <UserCheck size={16} className="text-[#A3740A] flex-shrink-0 mt-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-[#A3740A]">Paciente ja cadastrado</p>
+                        <p className="text-xs text-[#A3740A] truncate">{pacienteExistente.nome}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/paciente/${pacienteExistente.id}`)}
+                        className="text-xs font-semibold text-acs-azul underline whitespace-nowrap"
+                      >
+                        Ver perfil
+                      </button>
+                    </div>
+                  )}
                 </FormField>
                 <FormField label="CNS" hint="Cartao Nacional de Saude">
                   <input type="text" value={cns} onChange={(e) => setCns(e.target.value)} placeholder="000 0000 0000 0000" className={INPUT_CLS} />
