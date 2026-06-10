@@ -1,42 +1,82 @@
-import { MapPin } from 'lucide-react';
+import { MapPin, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { MapaVisitas } from '../components/MapaVisitas';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { RiskBadge } from '../components/RiskBadge';
+import { pacientesService, type PacienteListagem } from '@/services/pacientesService';
+
+type Prioridade = 'urgent' | 'warning' | 'low';
+
+interface Visita {
+  id: number;
+  ordem: number;
+  prioridade: Prioridade;
+  paciente: string;
+  endereco: string;
+  distancia: string;
+  razao: string;
+  status: string;
+  lat: number;
+  lng: number;
+  distanciaMetros: number;
+}
+
+function pacienteParaVisita(p: PacienteListagem, ordem: number): Visita {
+  const prioridade: Prioridade =
+    p.nivel_risco === 'alto' ? 'urgent' :
+    p.nivel_risco === 'medio' ? 'warning' : 'low';
+
+  const razao =
+    p.total_encaminhamentos_vencidos && p.total_encaminhamentos_vencidos > 0
+      ? 'Encaminhamento pendente'
+      : p.alertas_pendentes && p.alertas_pendentes > 0
+      ? 'Alerta pendente'
+      : p.nivel_risco === 'alto'
+      ? 'Alto risco'
+      : 'Visita de rotina';
+
+  const enderecoParts = [p.logradouro, p.numero].filter(Boolean);
+  const endereco = enderecoParts.length > 0 ? enderecoParts.join(', ') : 'Endereco nao informado';
+
+  return {
+    id: p.id,
+    ordem,
+    prioridade,
+    paciente: p.nome,
+    endereco,
+    distancia: '—',
+    razao,
+    status: 'pendente',
+    lat: -23.5505 + (Math.random() - 0.5) * 0.02,
+    lng: -46.6333 + (Math.random() - 0.5) * 0.02,
+    distanciaMetros: 300 + Math.floor(Math.random() * 1200),
+  };
+}
 
 export function Agenda() {
   const navigate = useNavigate();
   const [visualizacao, setVisualizacao] = useState<'lista' | 'mapa'>('lista');
   const [rotaOtimizada, setRotaOtimizada] = useState(false);
+  const [visitas, setVisitas] = useState<Visita[]>([]);
+  const [carregando, setCarregando] = useState(true);
 
-  const visitasIniciais = [
-    {
-      id: 1, ordem: 1, prioridade: 'urgent' as const,
-      paciente: 'Maria Silva', endereco: 'Rua das Flores, 123',
-      distancia: '350m', razao: 'Sem visita ha 14 dias — Alto risco',
-      status: 'pendente', lat: -23.5505, lng: -46.6333, distanciaMetros: 350
-    },
-    {
-      id: 2, ordem: 2, prioridade: 'urgent' as const,
-      paciente: 'Carlos Melo', endereco: 'Av. Brasil, 456',
-      distancia: '520m', razao: 'Encaminhamento pendente',
-      status: 'pendente', lat: -23.5515, lng: -46.6355, distanciaMetros: 520
-    },
-    {
-      id: 3, ordem: 3, prioridade: 'warning' as const,
-      paciente: 'Joao Pereira', endereco: 'Rua Santos, 789',
-      distancia: '1.2km', razao: 'Paciente cronico',
-      status: 'realizada', lat: -23.5490, lng: -46.6370, distanciaMetros: 1200
-    },
-    {
-      id: 4, ordem: 4, prioridade: 'low' as const,
-      paciente: 'Ana Costa', endereco: 'Rua das Acacias, 321',
-      distancia: '800m', razao: 'Visita de rotina',
-      status: 'realizada', lat: -23.5525, lng: -46.6320, distanciaMetros: 800
+  useEffect(() => {
+    async function carregar() {
+      try {
+        const { data } = await pacientesService.listar({ ativo: 1 });
+        const ordenados = [...data].sort((a, b) => {
+          const ordem = { alto: 0, medio: 1, baixo: 2 };
+          return (ordem[a.nivel_risco] ?? 2) - (ordem[b.nivel_risco] ?? 2);
+        });
+        setVisitas(ordenados.map((p, i) => pacienteParaVisita(p, i + 1)));
+      } catch {
+        setVisitas([]);
+      } finally {
+        setCarregando(false);
+      }
     }
-  ];
-
-  const [visitas, setVisitas] = useState(visitasIniciais);
+    carregar();
+  }, []);
 
   const otimizarRota = () => {
     const visitasPendentes = visitas.filter(v => v.status === 'pendente');
@@ -110,15 +150,15 @@ export function Agenda() {
         {/* Metricas */}
         <div className="flex gap-3">
           <div className="flex-1 bg-acs-azul-050 rounded-xl px-3 py-2 text-center">
-            <div className="text-xl font-display font-bold text-acs-azul">8</div>
+            <div className="text-xl font-display font-bold text-acs-azul">{visitas.length}</div>
             <div className="text-xs text-acs-ink-3">Total</div>
           </div>
           <div className="flex-1 bg-acs-verde-100 rounded-xl px-3 py-2 text-center">
-            <div className="text-xl font-display font-bold text-acs-verde">3</div>
+            <div className="text-xl font-display font-bold text-acs-verde">{visitas.filter(v => v.status === 'realizada').length}</div>
             <div className="text-xs text-[#1E6B48]">Realizadas</div>
           </div>
           <div className="flex-1 bg-acs-vermelho-100 rounded-xl px-3 py-2 text-center">
-            <div className="text-xl font-display font-bold text-acs-vermelho">2</div>
+            <div className="text-xl font-display font-bold text-acs-vermelho">{visitas.filter(v => v.prioridade === 'urgent').length}</div>
             <div className="text-xs text-acs-vermelho">Urgentes</div>
           </div>
         </div>
@@ -127,6 +167,15 @@ export function Agenda() {
       {/* Lista de visitas */}
       {visualizacao === 'lista' && (
         <div className="flex-1 px-6 py-4 space-y-3">
+          {carregando && (
+            <div className="flex items-center justify-center py-16 gap-2 text-acs-ink-3">
+              <Loader2 size={20} className="animate-spin" />
+              <span className="text-sm">Carregando pacientes...</span>
+            </div>
+          )}
+          {!carregando && visitas.length === 0 && (
+            <div className="text-center py-16 text-acs-ink-3 text-sm">Nenhum paciente encontrado.</div>
+          )}
           {visitas.map((visita) => (
             <div
               key={visita.id}

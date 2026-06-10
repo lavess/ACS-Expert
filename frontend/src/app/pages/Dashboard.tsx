@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router';
 import { RiskBadge } from '../components/RiskBadge';
 import { useAuthStore } from '@/store/authStore';
 import { usuariosService, type UsuarioAPI } from '@/services/usuariosService';
+import { pacientesService, type PacienteListagem } from '@/services/pacientesService';
 
 function saudacao(nomeCompleto?: string) {
   const hora = new Date().getHours();
@@ -42,26 +43,32 @@ export function Dashboard() {
   const subtitulo = usuario?.microarea_nome
     ?? (usuario?.municipio_nome ? `${PERFIL_LABEL[perfil ?? ''] ?? perfil} — ${usuario.municipio_nome}` : PERFIL_LABEL[perfil ?? ''] ?? '');
 
-  const alerts = [
-    {
-      id: 1,
-      patient: 'Maria Silva',
-      message: 'Alto risco, sem visita ha 12 dias',
-      level: 'urgent' as const
-    },
-    {
-      id: 2,
-      patient: 'Joao Pereira',
-      message: 'Encaminhamento pendente ha 5 dias',
-      level: 'warning' as const
-    },
-    {
-      id: 3,
-      patient: 'Familia Souza',
-      message: '3 membros em risco moderado',
-      level: 'warning' as const
-    }
-  ];
+  const [totalPacientes, setTotalPacientes] = useState(0);
+  const [urgentes, setUrgentes] = useState(0);
+  const [pacientesAlerta, setPacientesAlerta] = useState<PacienteListagem[]>([]);
+
+  useEffect(() => {
+    pacientesService.listar({ ativo: 1 })
+      .then(({ data }) => {
+        setTotalPacientes(data.length);
+        const altos = data.filter(p => p.nivel_risco === 'alto');
+        const medios = data.filter(p => p.nivel_risco === 'medio');
+        setUrgentes(altos.length);
+        setPacientesAlerta([...altos, ...medios].slice(0, 5));
+      })
+      .catch(() => {});
+  }, []);
+
+  const alerts = pacientesAlerta.map(p => ({
+    id: p.id,
+    patient: p.nome,
+    message: p.total_encaminhamentos_vencidos && p.total_encaminhamentos_vencidos > 0
+      ? 'Encaminhamento pendente'
+      : p.nivel_risco === 'alto'
+      ? 'Alto risco — requer visita prioritaria'
+      : 'Risco moderado',
+    level: (p.nivel_risco === 'alto' ? 'urgent' : 'warning') as 'urgent' | 'warning',
+  }));
 
   const quickActions = [
     { icon: Stethoscope, label: 'Nova Triagem', path: '/pacientes' },
@@ -104,15 +111,15 @@ export function Dashboard() {
               <h3 className="font-display font-semibold text-white mb-4 text-lg">Agenda de hoje</h3>
               <div className="grid grid-cols-3 gap-4 mb-4">
                 <div className="text-center">
-                  <div className="text-3xl font-display font-bold text-white">8</div>
+                  <div className="text-3xl font-display font-bold text-white">{totalPacientes}</div>
                   <div className="text-sm text-white/80">Planejadas</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-3xl font-display font-bold text-white">3</div>
+                  <div className="text-3xl font-display font-bold text-white">0</div>
                   <div className="text-sm text-white/80">Realizadas</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-3xl font-display font-bold text-white">2</div>
+                  <div className="text-3xl font-display font-bold text-white">{urgentes}</div>
                   <div className="text-sm text-white/80">Urgentes</div>
                 </div>
               </div>
@@ -151,7 +158,7 @@ export function Dashboard() {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-display font-semibold text-acs-ink text-lg">Alertas</h3>
                 <span className="w-6 h-6 bg-acs-vermelho text-white text-xs rounded-full flex items-center justify-center font-semibold">
-                  7
+                  {urgentes}
                 </span>
               </div>
               <div className="space-y-3">

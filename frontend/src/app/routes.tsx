@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router';
+import { createBrowserRouter, Navigate } from 'react-router';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
 import { Pacientes } from './pages/Pacientes';
@@ -21,6 +21,14 @@ import { ResponsiveLayout } from './components/ResponsiveLayout';
 export const router = createBrowserRouter([
   {
     path: '/',
+    element: (
+      <ResponsiveLayout showNav={false}>
+        <Login />
+      </ResponsiveLayout>
+    )
+  },
+  {
+    path: '/login',
     element: (
       <ResponsiveLayout showNav={false}>
         <Login />
@@ -154,5 +162,9 @@ export const router = createBrowserRouter([
         <EditarUsuario />
       </ResponsiveLayout>
     )
+  },
+  {
+    path: '*',
+    element: <Navigate to="/" replace />
   }
 ]);

@@ -279,7 +279,7 @@ export function NovoPaciente() {
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <FormField label="CPF" hint="Opcional">
-                  <input type="text" value={cpf} onChange={(e) => setCpf(e.target.value)} placeholder="000.000.000-00" className={INPUT_CLS} />
+                  <input type="text" value={cpf} onChange={(e) => { const d = e.target.value.replace(/\D/g, '').slice(0, 11); const m = d.replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})$/, '$1-$2'); setCpf(m); }} placeholder="000.000.000-00" maxLength={14} inputMode="numeric" className={INPUT_CLS} />
                 </FormField>
                 <FormField label="CNS" hint="Cartao Nacional de Saude">
                   <input type="text" value={cns} onChange={(e) => setCns(e.target.value)} placeholder="000 0000 0000 0000" className={INPUT_CLS} />
@@ -336,7 +336,7 @@ export function NovoPaciente() {
                   <input type="text" value={bairro} onChange={(e) => setBairro(e.target.value)} placeholder="Ex: Centro" className={INPUT_CLS} />
                 </FormField>
                 <FormField label="CEP">
-                  <input type="text" value={cep} onChange={(e) => setCep(e.target.value)} placeholder="00000-000" className={INPUT_CLS} />
+                  <input type="text" value={cep} onChange={(e) => { const d = e.target.value.replace(/\D/g, '').slice(0, 8); const m = d.replace(/(\d{5})(\d)/, '$1-$2'); setCep(m); }} placeholder="00000-000" maxLength={9} inputMode="numeric" className={INPUT_CLS} />
                 </FormField>
               </div>
 

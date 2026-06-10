@@ -1,6 +1,7 @@
-import { useMemo } from 'react'
+import { useMemo, useEffect, useState } from 'react'
 import { useAuthStore } from '@/store/authStore'
 import type { AcsUser } from '@/app/components/SideNav'
+import { pacientesService } from '@/services/pacientesService'
 
 function iniciaisDe(nome: string): string {
   const partes = (nome || '').trim().split(/\s+/).filter(Boolean)
@@ -9,17 +10,19 @@ function iniciaisDe(nome: string): string {
   return (partes[0][0] + partes[partes.length - 1][0]).toUpperCase()
 }
 
-/**
- * Devolve os dados do ACS logado já moldados no formato `AcsUser` que o
- * SideNav consome. Hoje deriva do usuário no auth store e usa mocks para
- * UBS, microáreas e estatísticas da semana.
- *
- * TODO: substituir os campos mockados por chamadas reais quando os
- * endpoints `/api/usuarios/me/contexto` e `/api/usuarios/me/semana`
- * estiverem disponíveis.
- */
 export function useCurrentAcs(): AcsUser | null {
   const usuario = useAuthStore((s) => s.usuario)
+  const [semana, setSemana] = useState({ visitas: 0, triagens: 0, alertas: 0 })
+
+  useEffect(() => {
+    if (!usuario) return
+    pacientesService.listar({ ativo: 1 })
+      .then(({ data }) => {
+        const alertas = data.filter(p => p.nivel_risco === 'alto' || (p.alertas_pendentes ?? 0) > 0).length
+        setSemana({ visitas: data.length, triagens: data.length, alertas })
+      })
+      .catch(() => {})
+  }, [usuario])
 
   return useMemo<AcsUser | null>(() => {
     if (!usuario) return null
@@ -29,7 +32,6 @@ export function useCurrentAcs(): AcsUser | null {
       iniciais:  iniciaisDe(usuario.nome),
       matricula: usuario.matricula,
       perfil:    usuario.perfil,
-      // TODO: ligar com API — UBS real vem de /api/unidades-saude por usuario.
       ubs: {
         id:   '0',
         nome: 'UBS Joinville (mock)',
@@ -38,12 +40,7 @@ export function useCurrentAcs(): AcsUser | null {
       microareasPossiveis: [
         `MA-${String(usuario.microareaId ?? 0).padStart(2, '0')}`,
       ],
-      // TODO: ligar com API — métricas semanais reais.
-      semana: {
-        visitas:  12,
-        triagens: 8,
-        alertas:  3,
-      },
+      semana,
     }
-  }, [usuario])
+  }, [usuario, semana])
 }
