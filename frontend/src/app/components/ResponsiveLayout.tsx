@@ -8,9 +8,11 @@ import {
   MobileDrawer,
   pathToNavId,
   NAV_ID_TO_PATH,
+  NAV_ITEMS,
   useMediaQuery,
   useEdgeSwipe,
   type NavId,
+  type NavItem,
 } from './SideNav'
 import { useCurrentAcs } from '@/hooks/useCurrentAcs'
 import { useSyncStatus } from '@/hooks/useSyncStatus'
@@ -43,6 +45,13 @@ export function ResponsiveLayout({ children, showNav = true }: ResponsiveLayoutP
   })
 
   const current = pathToNavId(location.pathname) ?? undefined
+
+  // Injeta badge real de alertas no item do nav
+  const navItemsComBadge = NAV_ITEMS.map((item): NavItem =>
+    item.id === 'alertas' && acsUser
+      ? { ...item, badge: (acsUser.totalAlertas ?? 0) > 0 ? acsUser.totalAlertas : undefined }
+      : item
+  )
 
   const handleNavigate = (id: NavId) => {
     if (id === 'sobre') { setSobreOpen(true); return }
@@ -85,6 +94,7 @@ export function ResponsiveLayout({ children, showNav = true }: ResponsiveLayoutP
             onShortcut={handleShortcut}
             onLogout={logout}
             layout="desktop"
+            navItems={navItemsComBadge}
           />
         )}
 
@@ -213,6 +223,7 @@ export function ResponsiveLayout({ children, showNav = true }: ResponsiveLayoutP
           onShortcut={handleShortcut}
           onLogout={logout}
           layout="mobile"
+          navItems={navItemsComBadge}
         />
       )}
     </div>

@@ -2,6 +2,18 @@ const express = require('express');
 const router  = express.Router();
 const db      = require('../config/db');
 const { auth } = require('../middlewares/auth');
+const alertasService = require('../services/alertas');
+
+// Garante que a coluna encaminhamento_id existe e faz backfill retroativo
+db.query(`
+  ALTER TABLE alertas
+    ADD COLUMN IF NOT EXISTS encaminhamento_id INT NULL DEFAULT NULL
+`)
+  .then(() => alertasService.backfillAlertasEncaminhamentosParaGestores())
+  .then(({ inseridos }) => {
+    if (inseridos > 0) console.log(`[ALERTAS] backfill: ${inseridos} alerta(s) gerado(s) para gestores.`);
+  })
+  .catch((err) => console.warn('[ALERTAS] migrate/backfill:', err.message));
 
 router.use(auth);
 
@@ -14,6 +26,7 @@ router.get('/', async (req, res) => {
     const [rows] = await db.query(`
       SELECT a.id, a.paciente_id, a.tipo, a.urgencia, a.titulo, a.mensagem,
              a.resolvido, a.data_resolucao, a.created_at,
+             a.encaminhamento_id,
              p.nome AS paciente_nome, p.nivel_risco
         FROM alertas a
         LEFT JOIN pacientes p ON p.id = a.paciente_id

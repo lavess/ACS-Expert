@@ -6,6 +6,7 @@ export type TipoAlerta =
   | 'alto_risco_sem_visita'
   | 'encaminhamento_pendente'
   | 'encaminhamento_ausencia'
+  | 'novo_encaminhamento'
   | 'cronico_sem_acompanhamento'
   | 'gestante_sem_prenatal'
   | 'vacina_atrasada'
@@ -23,6 +24,7 @@ export interface AlertaAPI {
   resolvido: number
   data_resolucao: string | null
   created_at: string
+  encaminhamento_id: number | null
 }
 
 export const alertasService = {

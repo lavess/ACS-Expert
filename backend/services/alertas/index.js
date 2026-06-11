@@ -20,6 +20,7 @@ const TIPOS_VALIDOS = new Set([
   'alto_risco_sem_visita',
   'encaminhamento_pendente',
   'encaminhamento_ausencia',
+  'novo_encaminhamento',
   'cronico_sem_acompanhamento',
   'gestante_sem_prenatal',
   'vacina_atrasada',
@@ -34,9 +35,9 @@ function executor(connection) {
 
 // ── criarAlerta ─────────────────────────────────────────────
 // Cria um alerta evitando duplicar uma entrada ainda não resolvida
-// do mesmo (tipo, paciente, acs).
+// do mesmo (tipo, paciente, acs). Aceita encaminhamento_id opcional.
 async function criarAlerta(
-  { paciente_id = null, acs_id, tipo, urgencia = 'atencao', titulo, mensagem = null },
+  { paciente_id = null, acs_id, tipo, urgencia = 'atencao', titulo, mensagem = null, encaminhamento_id = null },
   connection = null
 ) {
   if (!acs_id)  throw new Error('criarAlerta: acs_id é obrigatório.');
@@ -51,24 +52,89 @@ async function criarAlerta(
   const exec = executor(connection);
 
   // Deduplica: se já existe um alerta não resolvido idêntico, devolve-o.
+  const dedupeKey = encaminhamento_id
+    ? `encaminhamento_id = ${encaminhamento_id}`
+    : `(paciente_id <=> ${paciente_id ?? 'NULL'})`;
+
   const [dup] = await exec.query(
     `SELECT id FROM alertas
        WHERE tipo = ? AND acs_id = ?
          AND (paciente_id <=> ?)
+         AND (? IS NULL OR encaminhamento_id = ?)
          AND resolvido = 0
        LIMIT 1`,
-    [tipo, acs_id, paciente_id]
+    [tipo, acs_id, paciente_id, encaminhamento_id, encaminhamento_id]
   );
   if (dup.length > 0) {
     return { id: dup[0].id, jaExistia: true };
   }
 
   const [result] = await exec.query(
-    `INSERT INTO alertas (paciente_id, acs_id, tipo, urgencia, titulo, mensagem)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-    [paciente_id, acs_id, tipo, urgencia, titulo, mensagem]
+    `INSERT INTO alertas (paciente_id, acs_id, tipo, urgencia, titulo, mensagem, encaminhamento_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [paciente_id, acs_id, tipo, urgencia, titulo, mensagem, encaminhamento_id]
   );
   return { id: result.insertId, jaExistia: false };
+}
+
+// ── alertaPorNovoEncaminhamento ─────────────────────────────
+// Disparado quando um encaminhamento é criado pelo ACS.
+// Cria um alerta de urgência 'atencao' para cada gestor/coordenador do sistema.
+async function alertaPorNovoEncaminhamento(encaminhamento, connection = null) {
+  const exec = executor(connection);
+
+  const TIPO_LABEL = {
+    consulta_medica: 'Consulta médica',
+    enfermagem:      'Enfermagem',
+    vacinacao:       'Vacinação',
+    exame:           'Exame',
+    urgencia:        'Urgência',
+    especialista:    'Especialista',
+  };
+
+  // Busca nome do paciente e do ACS
+  const [[pacRow]] = await exec.query(
+    'SELECT nome FROM pacientes WHERE id = ?',
+    [encaminhamento.paciente_id]
+  );
+  const [[acsRow]] = await exec.query(
+    'SELECT nome FROM usuarios WHERE id = ?',
+    [encaminhamento.acs_id]
+  );
+  const nomePaciente = pacRow?.nome ?? `Paciente #${encaminhamento.paciente_id}`;
+  const nomeAcs      = acsRow?.nome ?? `ACS #${encaminhamento.acs_id}`;
+
+  const tipoLabel = TIPO_LABEL[encaminhamento.tipo] ?? encaminhamento.tipo;
+  const titulo    = `Novo encaminhamento — ${nomePaciente}`;
+  const mensagem  =
+    `${nomeAcs} encaminhou ${nomePaciente} para ${tipoLabel}. ` +
+    (encaminhamento.data_prevista
+      ? `Data prevista: ${new Date(encaminhamento.data_prevista).toLocaleDateString('pt-BR')}. `
+      : '') +
+    `Motivo: ${encaminhamento.motivo}`;
+
+  // Busca todos gestores e coordenadores ativos
+  const [gestores] = await exec.query(
+    `SELECT id FROM usuarios WHERE perfil IN ('gestor', 'coordenador') AND ativo = 1`
+  );
+
+  const resultados = [];
+  for (const gestor of gestores) {
+    const r = await criarAlerta(
+      {
+        paciente_id:       encaminhamento.paciente_id,
+        acs_id:            gestor.id,
+        tipo:              'novo_encaminhamento',
+        urgencia:          'atencao',
+        titulo,
+        mensagem,
+        encaminhamento_id: encaminhamento.id,
+      },
+      connection
+    );
+    resultados.push(r);
+  }
+  return resultados;
 }
 
 // ── alertaPorAusenciaEncaminhamento ─────────────────────────
@@ -157,10 +223,74 @@ async function gerarAlertasEncaminhamentosVencidos(acsId, connection = null) {
   return { inseridos: r.affectedRows };
 }
 
+// ── backfillAlertasEncaminhamentosParaGestores ──────────────
+// Gera alertas retroativamente para encaminhamentos que ainda não
+// têm alerta do tipo 'novo_encaminhamento'. Idempotente.
+async function backfillAlertasEncaminhamentosParaGestores() {
+  const TIPO_LABEL = {
+    consulta_medica: 'Consulta médica',
+    enfermagem:      'Enfermagem',
+    vacinacao:       'Vacinação',
+    exame:           'Exame',
+    urgencia:        'Urgência',
+    especialista:    'Especialista',
+  };
+
+  // Encaminhamentos sem alerta 'novo_encaminhamento' ainda não resolvido
+  const [encs] = await db.query(`
+    SELECT e.id, e.paciente_id, e.acs_id, e.tipo, e.motivo, e.data_prevista,
+           p.nome AS paciente_nome, u.nome AS acs_nome
+      FROM encaminhamentos e
+      JOIN pacientes p ON p.id = e.paciente_id
+      JOIN usuarios  u ON u.id = e.acs_id
+     WHERE NOT EXISTS (
+       SELECT 1 FROM alertas a
+        WHERE a.encaminhamento_id = e.id
+          AND a.tipo = 'novo_encaminhamento'
+     )
+  `);
+
+  if (encs.length === 0) return { inseridos: 0 };
+
+  const [gestores] = await db.query(
+    `SELECT id FROM usuarios WHERE perfil IN ('gestor', 'coordenador') AND ativo = 1`
+  );
+  if (gestores.length === 0) return { inseridos: 0 };
+
+  let inseridos = 0;
+  for (const enc of encs) {
+    const tipoLabel = TIPO_LABEL[enc.tipo] ?? enc.tipo;
+    const titulo    = `Novo encaminhamento — ${enc.paciente_nome}`;
+    const mensagem  =
+      `${enc.acs_nome} encaminhou ${enc.paciente_nome} para ${tipoLabel}. ` +
+      (enc.data_prevista
+        ? `Data prevista: ${new Date(enc.data_prevista).toLocaleDateString('pt-BR')}. `
+        : '') +
+      `Motivo: ${enc.motivo}`;
+
+    for (const gestor of gestores) {
+      const r = await criarAlerta({
+        paciente_id:       enc.paciente_id,
+        acs_id:            gestor.id,
+        tipo:              'novo_encaminhamento',
+        urgencia:          'atencao',
+        titulo,
+        mensagem,
+        encaminhamento_id: enc.id,
+      });
+      if (!r.jaExistia) inseridos++;
+    }
+  }
+
+  return { inseridos };
+}
+
 module.exports = {
   criarAlerta,
+  alertaPorNovoEncaminhamento,
   alertaPorAusenciaEncaminhamento,
   gerarAlertasEncaminhamentosVencidos,
+  backfillAlertasEncaminhamentosParaGestores,
   resolverAlerta,
   TIPOS_VALIDOS,
   URGENCIAS_VALIDAS,

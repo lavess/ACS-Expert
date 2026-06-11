@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   AlertCircle, Clock, Info, CheckCircle2,
-  Loader2, BellOff, ChevronRight, RefreshCw,
+  Loader2, BellOff, ChevronRight, RefreshCw, ClipboardCheck,
 } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { BottomNav } from '../components/BottomNav';
@@ -35,11 +35,13 @@ function CardAlerta({
   alerta,
   onResolver,
   onVerPaciente,
+  onVerEncaminhamento,
   resolvendo,
 }: {
   alerta: AlertaAPI
   onResolver: () => void
   onVerPaciente: () => void
+  onVerEncaminhamento: () => void
   resolvendo: boolean
 }) {
   const cfg = URGENCIA_CFG[alerta.urgencia];
@@ -78,17 +80,28 @@ function CardAlerta({
           <p className="text-xs text-acs-ink-3 leading-relaxed mb-3">{alerta.mensagem}</p>
 
           {/* Ações */}
-          <button
-            onClick={onResolver}
-            disabled={resolvendo}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-acs-verde hover:underline disabled:opacity-40 transition-opacity"
-          >
-            {resolvendo
-              ? <Loader2 size={13} className="animate-spin" />
-              : <CheckCircle2 size={13} strokeWidth={2.2} />
-            }
-            Marcar como resolvido
-          </button>
+          <div className="flex items-center gap-4 flex-wrap">
+            {alerta.encaminhamento_id && (
+              <button
+                onClick={onVerEncaminhamento}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-acs-azul hover:underline"
+              >
+                <ClipboardCheck size={13} strokeWidth={2.2} />
+                Ver encaminhamento
+              </button>
+            )}
+            <button
+              onClick={onResolver}
+              disabled={resolvendo}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-acs-verde hover:underline disabled:opacity-40 transition-opacity"
+            >
+              {resolvendo
+                ? <Loader2 size={13} className="animate-spin" />
+                : <CheckCircle2 size={13} strokeWidth={2.2} />
+              }
+              Marcar como resolvido
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -238,6 +251,9 @@ export function Alertas() {
                     onResolver={() => resolver(alerta.id)}
                     onVerPaciente={() =>
                       alerta.paciente_id && navigate(`/paciente/${alerta.paciente_id}`)
+                    }
+                    onVerEncaminhamento={() =>
+                      navigate(`/encaminhamentos?destaque=${alerta.encaminhamento_id}`)
                     }
                   />
                 ))}

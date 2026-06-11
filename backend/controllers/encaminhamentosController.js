@@ -111,7 +111,23 @@ async function criar(req, res) {
     );
 
     const [rows] = await db.query(`${selectBase()} WHERE e.id = ?`, [result.insertId]);
-    res.status(201).json(rows[0]);
+    const enc = rows[0];
+
+    // Gera alertas para gestores/coordenadores (erro não bloqueia resposta)
+    try {
+      await alertasService.alertaPorNovoEncaminhamento({
+        id:           result.insertId,
+        paciente_id:  enc.paciente_id,
+        acs_id:       enc.acs_id,
+        tipo:         enc.tipo,
+        motivo:       enc.motivo,
+        data_prevista: enc.data_prevista,
+      });
+    } catch (err) {
+      console.warn('[ENCAMINHAMENTOS/criar] gerar alertas falhou:', err.message);
+    }
+
+    res.status(201).json(enc);
   } catch (err) {
     console.error('[ENCAMINHAMENTOS/criar] Erro:', err);
     res.status(500).json({ message: 'Erro ao criar encaminhamento.', error: err.message });

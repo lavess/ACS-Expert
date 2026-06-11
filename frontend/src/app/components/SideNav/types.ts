@@ -32,6 +32,7 @@ export interface AcsUser {
   ubs:                 { id: string; nome: string }
   microareaAtual:      string
   microareasPossiveis: string[]
+  totalAlertas?:       number
   semana?: {
     visitas:  number
     triagens: number
@@ -55,6 +56,7 @@ export interface SideNavProps {
   onLogout:           () => void
   layout:             Layout
   showStats?:         boolean
+  navItems?:          NavItem[]
 }
 
 export interface MobileDrawerProps extends SideNavProps {

@@ -25,8 +25,9 @@ export function SideNav(props: Props) {
   const {
     user, sync, current,
     onNavigate, onMicroareaChange, onShortcut, onLogout,
-    layout, showStats = true, titleId,
+    layout, showStats = true, titleId, navItems,
   } = props
+  const mainItems = navItems ?? NAV_ITEMS
 
   const temSemana = !!user.semana
   const secondaryItems = filterItemsByPerfil(SECONDARY_ITEMS, user.perfil)
@@ -58,7 +59,7 @@ export function SideNav(props: Props) {
         <MicroareaSwitcher user={user} layout="desktop" onChange={onMicroareaChange} />
 
         <div className="flex-1 overflow-y-auto min-h-0">
-          <NavList items={NAV_ITEMS} layout="desktop" current={current} onPick={onNavigate} />
+          <NavList items={mainItems} layout="desktop" current={current} onPick={onNavigate} />
           <Atalhos layout="desktop" onAction={onShortcut} />
           {showStats && temSemana && (
             <StatsBlock layout="desktop" data={user.semana!} />
@@ -81,7 +82,7 @@ export function SideNav(props: Props) {
         <MicroareaSwitcher user={user} layout="mobile" onChange={onMicroareaChange} />
         <Atalhos layout="mobile" onAction={onShortcut} />
         <NavList
-          items={NAV_ITEMS}
+          items={mainItems}
           layout="mobile"
           current={current}
           onPick={onNavigate}

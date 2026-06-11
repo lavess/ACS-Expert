@@ -11,7 +11,7 @@ export const NAV_ITEMS: NavItem[] = [
   { id: 'agenda',    label: 'Agenda',    icon: Calendar,       to: '/agenda' },
   { id: 'pacientes', label: 'Pacientes', icon: Users,          to: '/pacientes' },
   { id: 'triagens',  label: 'Encaminhamentos', icon: ClipboardCheck, to: '/encaminhamentos' },
-  { id: 'alertas',   label: 'Alertas',   icon: BadgeAlert,     to: '/alertas', badge: 3, urgent: true },
+  { id: 'alertas',   label: 'Alertas',   icon: BadgeAlert,     to: '/alertas', urgent: true },
 ]
 
 // Itens secundários (rodapé / "Conta").

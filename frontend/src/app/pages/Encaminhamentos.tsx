@@ -4,7 +4,7 @@ import {
   Stethoscope, Syringe, FlaskConical, Activity, UserPlus, Hospital,
   ChevronRight, FileText, MapPin,
 } from 'lucide-react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import { BottomNav } from '../components/BottomNav';
 import {
   encaminhamentosService,
@@ -83,10 +83,12 @@ function CardEncaminhamento({
   enc,
   onAcao,
   onAbrirPaciente,
+  destaque = false,
 }: {
   enc: EncaminhamentoAPI;
   onAcao: (enc: EncaminhamentoAPI) => void;
   onAbrirPaciente: (id: number) => void;
+  destaque?: boolean;
 }) {
   const meta = TIPO_META[enc.tipo];
   const Icon = meta.icon;
@@ -100,7 +102,10 @@ function CardEncaminhamento({
     null;
 
   return (
-    <div className="card-acs p-4 border border-acs-line">
+    <div
+      className={`card-acs p-4 border ${destaque ? 'border-acs-azul ring-2 ring-acs-azul/20' : 'border-acs-line'}`}
+      id={`enc-${enc.id}`}
+    >
       {/* Cabeçalho: paciente + chevron */}
       <button
         onClick={() => onAbrirPaciente(enc.paciente_id)}
@@ -170,7 +175,10 @@ function CardEncaminhamento({
 
 export function Encaminhamentos() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<TabId>('pendentes');
+  const [searchParams] = useSearchParams();
+  const destaqueId = searchParams.get('destaque') ? Number(searchParams.get('destaque')) : null;
+
+  const [activeTab, setActiveTab] = useState<TabId>('todos');
   const [data, setData]           = useState<EncaminhamentoAPI[]>([]);
   const [loading, setLoading]     = useState(true);
   const [erro, setErro]           = useState<string | null>(null);
@@ -203,6 +211,13 @@ export function Encaminhamentos() {
   useEffect(() => {
     carregar();
   }, [carregar]);
+
+  // Rola até o card destacado após carregamento
+  useEffect(() => {
+    if (!destaqueId || loading) return;
+    const el = document.getElementById(`enc-${destaqueId}`);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [destaqueId, loading]);
 
   function handleAcao(enc: EncaminhamentoAPI) {
     if (enc.status === 'pendente') {
@@ -266,6 +281,7 @@ export function Encaminhamentos() {
               enc={enc}
               onAcao={handleAcao}
               onAbrirPaciente={(id) => navigate(`/paciente/${id}`)}
+              destaque={destaqueId === enc.id}
             />
           ))
         )}

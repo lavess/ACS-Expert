@@ -2,6 +2,7 @@ import { useMemo, useEffect, useState } from 'react'
 import { useAuthStore } from '@/store/authStore'
 import type { AcsUser } from '@/app/components/SideNav'
 import { pacientesService } from '@/services/pacientesService'
+import { alertasService } from '@/services/alertasService'
 
 function iniciaisDe(nome: string): string {
   const partes = (nome || '').trim().split(/\s+/).filter(Boolean)
@@ -12,7 +13,8 @@ function iniciaisDe(nome: string): string {
 
 export function useCurrentAcs(): AcsUser | null {
   const usuario = useAuthStore((s) => s.usuario)
-  const [semana, setSemana] = useState({ visitas: 0, triagens: 0, alertas: 0 })
+  const [semana, setSemana]           = useState({ visitas: 0, triagens: 0, alertas: 0 })
+  const [totalAlertas, setTotalAlertas] = useState(0)
 
   useEffect(() => {
     if (!usuario) return
@@ -21,6 +23,13 @@ export function useCurrentAcs(): AcsUser | null {
         const alertas = data.filter(p => p.nivel_risco === 'alto' || (p.alertas_pendentes ?? 0) > 0).length
         setSemana({ visitas: data.length, triagens: data.length, alertas })
       })
+      .catch(() => {})
+  }, [usuario])
+
+  useEffect(() => {
+    if (!usuario) return
+    alertasService.listar(false)
+      .then(({ data }) => setTotalAlertas(data.length))
       .catch(() => {})
   }, [usuario])
 
@@ -40,7 +49,8 @@ export function useCurrentAcs(): AcsUser | null {
       microareasPossiveis: [
         `MA-${String(usuario.microareaId ?? 0).padStart(2, '0')}`,
       ],
+      totalAlertas,
       semana,
     }
-  }, [usuario, semana])
+  }, [usuario, semana, totalAlertas])
 }
