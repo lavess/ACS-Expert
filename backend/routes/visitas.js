@@ -13,7 +13,7 @@ router.get('/', async (req, res) => {
 
     const [rows] = await db.query(`
       SELECT v.id, v.paciente_id, v.acs_id, v.data_hora,
-             v.tipo_visita, v.status, v.observacao, v.created_at,
+             v.tipo_visita, v.status, v.observacao, v.flags, v.created_at,
              u.nome AS acs_nome
         FROM visitas v
         JOIN usuarios u ON u.id = v.acs_id
@@ -22,7 +22,15 @@ router.get('/', async (req, res) => {
        LIMIT 50
     `, [paciente_id]);
 
-    res.json(rows);
+    // mysql2 pode retornar JSON como string — garantir array
+    const resultado = rows.map((r) => ({
+      ...r,
+      flags: r.flags
+        ? (typeof r.flags === 'string' ? JSON.parse(r.flags) : r.flags)
+        : [],
+    }));
+
+    res.json(resultado);
   } catch (err) {
     console.error('[VISITAS/listar]', err);
     res.status(500).json({ message: 'Erro ao listar visitas.', error: err.message });
