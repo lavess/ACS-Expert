@@ -1,0 +1,12 @@
+/* ACS Expert — Tipografia
+   Sora (display) + Inter (UI) + JetBrains Mono (metadados)
+   Carregado via Google Fonts; em prod considere @fontsource-* para self-host. */
+
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+/* Famílias expostas como classes utilitárias (além do @theme em theme.css).
+   Use em qualquer lugar:
+     className="font-display"  → Sora
+     className="font-sans"     → Inter (default do body)
+     className="font-mono"     → JetBrains Mono
+*/

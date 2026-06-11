@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>ACS Expert — App Nova Identidade</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --azul:#0B3A6F; --coral:#E76F4A; --verde:#2F9E6E;
+    --paper:#F5F1EB; --paper-2:#EDE6DA; --paper-deep:#E4DBCA;
+    --ink:#0E1726; --ink-2:#3A4656; --ink-3:#6C7788;
+  }
+  html, body{ margin:0; padding:0; background:var(--paper-deep); font-family:'Inter',sans-serif; color:var(--ink);}
+  @keyframes blink{ 0%,49%{opacity:1;} 50%,100%{opacity:0;} }
+  *{ box-sizing:border-box; }
+  .canvas{
+    min-height:100vh; padding:80px 56px 100px;
+    background:
+      radial-gradient(circle at 20% 10%, #F5F1EB 0%, transparent 50%),
+      radial-gradient(circle at 80% 90%, #EDE6DA 0%, transparent 55%),
+      var(--paper-deep);
+  }
+  .header{ max-width:1640px; margin:0 auto 56px; display:flex; justify-content:space-between; align-items:flex-end; gap:40px;}
+  .brand{ display:flex; align-items:center; gap:14px; }
+  .brand .wm{ font-family:'Sora',sans-serif; font-weight:600; font-size:28px; letter-spacing:-0.02em; line-height:1; }
+  .brand .wm small{ font-weight:400; color:var(--ink-3); }
+  .title-area h1{
+    font-family:'Sora',sans-serif; font-weight:600; font-size:58px;
+    letter-spacing:-0.035em; line-height:1; margin:0 0 16px 0;
+    max-width:1100px;
+  }
+  .title-area h1 em{ color:var(--coral); font-style:italic; font-weight:500; }
+  .title-area p{ font-size:20px; line-height:1.5; color:var(--ink-2); margin:0; max-width:720px; }
+  .meta-chip{
+    font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.14em;
+    text-transform:uppercase; color:var(--ink-3);
+    padding:8px 12px; border:1px solid rgba(14,23,38,.12); border-radius:999px;
+    display:inline-flex; align-items:center; gap:8px; background:rgba(255,255,255,.4);
+    white-space:nowrap;
+  }
+  .meta-chip .dot{ width:8px; height:8px; border-radius:99px; background:var(--coral); }
+
+  .grid{
+    max-width:1680px; margin:0 auto;
+    display:grid; grid-template-columns:repeat(3, 1fr);
+    gap:60px 40px;
+    justify-items:center;
+  }
+  .cell{ display:flex; flex-direction:column; align-items:center; gap:20px; }
+  .cell .label{
+    display:flex; align-items:baseline; gap:12px; margin-top:4px;
+  }
+  .cell .num{
+    font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:.2em;
+    color:var(--ink-3);
+  }
+  .cell .name{
+    font-family:'Sora',sans-serif; font-weight:600; font-size:18px;
+    color:var(--ink); letter-spacing:-0.01em;
+  }
+  .cell .desc{
+    font-size:13px; color:var(--ink-3); max-width:320px; text-align:center;
+    line-height:1.4;
+  }
+</style>
+</head>
+<body>
+
+<div id="root"></div>
+
+<template id="__bundler_thumbnail">
+  <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <rect width="200" height="200" fill="#F5F1EB"/>
+    <path d="M100 35C75 35 55 55 55 80c0 28 45 70 45 70s45-42 45-70c0-25-20-45-45-45z" stroke="#0B3A6F" stroke-width="7" fill="none"/>
+    <path d="M40 88h16l6-12 12 24 8-16h28" stroke="#E76F4A" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </svg>
+</template>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="acs-tokens.jsx"></script>
+<script type="text/babel" src="acs-logo.jsx"></script>
+<script type="text/babel" src="acs-atoms.jsx"></script>
+<script type="text/babel" src="acs-screens-1.jsx"></script>
+<script type="text/babel" src="acs-screens-2.jsx"></script>
+
+<script type="text/babel">
+/* global React, ReactDOM, ACS, FONTS, AcsMark,
+   ScreenLogin, ScreenHome, ScreenPatients, ScreenTriage, ScreenResult, ScreenAgenda */
+
+function App(){
+  const screens = [
+    { n:'01', name:'Acesso',      desc:'Abertura da marca. Mote "cuidado que anda junto" e trabalho offline-first.', C: ScreenLogin },
+    { n:'02', name:'Início',      desc:'Rota do dia em destaque no azul institucional, métricas e alertas priorizados.', C: ScreenHome },
+    { n:'03', name:'Pacientes',   desc:'Lista ordenada por risco, com badges clínicos e FAB coral para cadastro.', C: ScreenPatients },
+    { n:'04', name:'Triagem · sintomas', desc:'Busca, intensidade 0-10 em gradiente verde→coral e acordeão por grupo.', C: ScreenTriage },
+    { n:'05', name:'Resultado',   desc:'Card de prioridade vermelho + condições prováveis com percentuais.', C: ScreenResult },
+    { n:'06', name:'Agenda',      desc:'Timeline de visitas com prioridade, distância e status em uma leitura.', C: ScreenAgenda },
+  ];
+  return (
+    <div className="canvas">
+      <div className="header">
+        <div>
+          <div className="brand">
+            <AcsMark size={34} color="#0B3A6F" accent="#E76F4A"/>
+            <div className="wm">ACS <small>Expert</small></div>
+          </div>
+          <div className="title-area" style={{marginTop:28}}>
+            <h1>A nova marca <em>no produto.</em></h1>
+            <p>Seis telas-chave do app aplicando a identidade: tipografia Sora + Inter, paleta papel/azul/coral, componentes com bordas suaves e o símbolo pulso-território nas superfícies.</p>
+          </div>
+        </div>
+        <div style={{display:'flex', flexDirection:'column', gap:8, alignItems:'flex-end'}}>
+          <span className="meta-chip"><span className="dot"/>v 1.0 · protótipo de alta fidelidade</span>
+          <span className="meta-chip" style={{background:'transparent'}}>iPhone · 390 × 844</span>
+          <span className="meta-chip" style={{background:'transparent'}}>6 telas · pt-BR</span>
+        </div>
+      </div>
+
+      <div className="grid">
+        {screens.map(s => (
+          <div className="cell" key={s.n}>
+            <s.C/>
+            <div>
+              <div className="label">
+                <span className="num">{s.n}</span>
+                <span className="name">{s.name}</span>
+              </div>
+              <div className="desc">{s.desc}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
