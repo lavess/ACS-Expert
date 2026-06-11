@@ -34,6 +34,7 @@ export function RegistrarVisitaSheet({ open, pacienteId, pacienteNome, onClose, 
   const [dataHora, setDataHora]     = useState(dataHoraLocal)
   const [observacao, setObservacao] = useState('')
   const [flags, setFlags]           = useState<VisitaFlag[]>([])
+  const [alertasAberto, setAlertasAberto] = useState(false)
   const [salvando, setSalvando]     = useState(false)
   const [erro, setErro]             = useState<string | null>(null)
   const [sucesso, setSucesso]       = useState(false)
@@ -45,6 +46,7 @@ export function RegistrarVisitaSheet({ open, pacienteId, pacienteNome, onClose, 
       setDataHora(dataHoraLocal())
       setObservacao('')
       setFlags([])
+      setAlertasAberto(false)
       setErro(null)
       setSucesso(false)
     }
@@ -144,20 +146,32 @@ export function RegistrarVisitaSheet({ open, pacienteId, pacienteNome, onClose, 
             />
           </div>
 
-          {/* Alertas sanitários */}
+          {/* Alertas sanitários — colapsável */}
           <div>
-            <div className="flex items-center gap-2 mb-2">
-              <ShieldAlert size={14} className="text-acs-coral" strokeWidth={2} />
-              <label className="font-mono text-[10px] uppercase tracking-[.14em] text-acs-ink-3">
+            <button
+              type="button"
+              onClick={() => setAlertasAberto((v) => !v)}
+              className="w-full flex items-center gap-2 py-2.5 px-3 rounded-xl border border-acs-line bg-white hover:bg-acs-paper transition-colors"
+            >
+              <ShieldAlert size={15} className="text-acs-coral flex-shrink-0" strokeWidth={2} />
+              <span className="font-mono text-[10px] uppercase tracking-[.14em] text-acs-ink-2 flex-1 text-left">
                 Alertas identificados
-              </label>
+              </span>
               {flags.length > 0 && (
-                <span className="ml-auto font-mono text-[10px] font-bold text-acs-coral">
-                  {flags.length} selecionado{flags.length > 1 ? 's' : ''}
+                <span className="font-mono text-[10px] font-bold text-acs-coral mr-1">
+                  {flags.length} alerta{flags.length > 1 ? 's' : ''}
                 </span>
               )}
-            </div>
-            <div className="space-y-1.5">
+              <svg
+                width="14" height="14" viewBox="0 0 14 14" fill="none"
+                className={`text-acs-ink-3 transition-transform duration-200 ${alertasAberto ? 'rotate-180' : ''}`}
+              >
+                <path d="M3 5l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+
+            {alertasAberto && (
+            <div className="mt-2 space-y-1.5">
               {VISITA_FLAGS.map((flag) => {
                 const ativo = flags.includes(flag.id)
                 return (
@@ -205,6 +219,7 @@ export function RegistrarVisitaSheet({ open, pacienteId, pacienteNome, onClose, 
                 )
               })}
             </div>
+            )}
           </div>
 
           {/* Observação */}
