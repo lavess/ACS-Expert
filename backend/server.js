@@ -17,6 +17,7 @@ app.use('/api/unidades-saude',   require('./routes/unidades-saude'));
 app.use('/api/pacientes',        require('./routes/pacientes'));
 app.use('/api/triagens',         require('./routes/triagens'));
 app.use('/api/encaminhamentos',  require('./routes/encaminhamentos'));
+app.use('/api/agenda',           require('./routes/agenda'));
 
 // ── Auth ───────────────────────────────────────────────────────
 app.post('/api/auth/login', async (req, res) => {
@@ -65,4 +66,8 @@ app.post('/api/auth/login', async (req, res) => {
 
 // ── Start ──────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`Servidor rodando na porta ${PORT}`);
+  // Job diário: gera agenda para todos os ACS às 06h (config via .env)
+  require('./services/scheduler').start();
+});
