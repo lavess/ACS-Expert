@@ -16,6 +16,7 @@ import { Perfil } from './pages/Perfil';
 import { Usuarios } from './pages/Usuarios';
 import { NovoUsuario } from './pages/NovoUsuario';
 import { EditarUsuario } from './pages/EditarUsuario';
+import { Relatorios } from './pages/Relatorios';
 import { ResponsiveLayout } from './components/ResponsiveLayout';
 import { RequireAuth } from './components/RequireAuth';
 
@@ -70,7 +71,8 @@ export const router = createBrowserRouter([
   { path: '/perfil',                       element: <AuthLayout><Perfil /></AuthLayout> },
 
   // Rotas exclusivas de gestor e coordenador
-  { path: '/usuarios',     element: <GestorCoordenadorLayout><Usuarios /></GestorCoordenadorLayout> },
+  { path: '/usuarios',    element: <GestorCoordenadorLayout><Usuarios /></GestorCoordenadorLayout> },
+  { path: '/relatorios',  element: <GestorCoordenadorLayout><Relatorios /></GestorCoordenadorLayout> },
   { path: '/novo-usuario', element: <GestorLayout><NovoUsuario /></GestorLayout> },
   { path: '/usuario/:id',  element: <GestorCoordenadorLayout><EditarUsuario /></GestorCoordenadorLayout> },
 

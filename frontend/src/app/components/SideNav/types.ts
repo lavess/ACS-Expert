@@ -4,7 +4,7 @@ export type Layout = 'mobile' | 'desktop'
 
 export type NavId =
   | 'inicio' | 'agenda' | 'pacientes' | 'triagens' | 'alertas'
-  | 'config' | 'ajuda'   | 'sobre'    | 'usuarios'
+  | 'config' | 'ajuda' | 'sobre' | 'usuarios' | 'relatorios'
 
 export type AcsPerfil = 'acs' | 'coordenador' | 'gestor'
 

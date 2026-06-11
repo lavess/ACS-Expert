@@ -1,6 +1,6 @@
 import {
   Home, Calendar, Users, ClipboardCheck, BadgeAlert,
-  Settings, CircleHelp, Info, ShieldCheck,
+  Settings, CircleHelp, Info, ShieldCheck, BarChart3,
 } from 'lucide-react'
 import type { AcsPerfil, NavItem } from './types'
 
@@ -17,8 +17,9 @@ export const NAV_ITEMS: NavItem[] = [
 // Itens secundários (rodapé / "Conta").
 // `perfis` restringe a exibição — se ausente, o item aparece para todos.
 export const SECONDARY_ITEMS: NavItem[] = [
-  { id: 'config',   label: 'Configurações', icon: Settings,    to: '/perfil' },
-  { id: 'usuarios', label: 'Usuários',      icon: ShieldCheck, to: '/usuarios', perfis: ['gestor'] },
+  { id: 'config',     label: 'Configurações', icon: Settings,    to: '/perfil' },
+  { id: 'relatorios', label: 'Relatórios',   icon: BarChart3,   to: '/relatorios', perfis: ['gestor', 'coordenador'] },
+  { id: 'usuarios',   label: 'Usuários',     icon: ShieldCheck, to: '/usuarios', perfis: ['gestor'] },
   { id: 'ajuda',    label: 'Ajuda',         icon: CircleHelp },
   { id: 'sobre',    label: 'Sobre o app',   icon: Info },
 ]
@@ -35,8 +36,9 @@ export const NAV_ID_TO_PATH: Partial<Record<NavItem['id'], string>> = {
   pacientes: '/pacientes',
   triagens:  '/encaminhamentos',
   alertas:   '/alertas',
-  config:    '/perfil',
-  usuarios:  '/usuarios',
+  config:     '/perfil',
+  relatorios: '/relatorios',
+  usuarios:   '/usuarios',
 }
 
 // Mapa inverso: pathname → NavId. Usado para destacar item ativo.
@@ -47,6 +49,7 @@ export function pathToNavId(pathname: string): NavItem['id'] | null {
   if (pathname.startsWith('/triagem'))           return 'triagens'
   if (pathname.startsWith('/encaminhamentos'))   return 'triagens'
   if (pathname.startsWith('/alertas'))           return 'alertas'
+  if (pathname.startsWith('/relatorios'))         return 'relatorios'
   if (pathname.startsWith('/usuarios'))          return 'usuarios'
   if (pathname.startsWith('/perfil'))            return 'config'
   return null
