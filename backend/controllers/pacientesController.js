@@ -55,11 +55,11 @@ async function substituirComorbidades(conn, pacienteId, comorbidades) {
 }
 
 // ── GET /api/pacientes ─────────────────────────────────────────
-// Query params: busca, nivel_risco, microarea_id, acs_responsavel_id, ativo
+// Query params: busca, nivel_risco, microarea_id, acs_responsavel_id, ativo,
+//               filtro (cronicos|gestantes|sem-visita|alertas),
+//               page (default 1), limit (default 20, max 100)
 async function listar(req, res) {
   try {
-    // Roda a regra automática de alertas SLA vencido do ACS logado
-    // antes de listar, p/ que `alertas_pendentes` reflita o estado atual.
     if (req.usuario?.id) {
       try {
         await alertasService.gerarAlertasEncaminhamentosVencidos(req.usuario.id);
@@ -68,9 +68,16 @@ async function listar(req, res) {
       }
     }
 
-    const { busca, nivel_risco, microarea_id, acs_responsavel_id, ativo, comorbidade } = req.query;
+    const {
+      busca, nivel_risco, microarea_id, acs_responsavel_id, ativo,
+      comorbidade, filtro,
+    } = req.query;
 
-    let sql = `
+    const page  = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 20));
+    const offset = (page - 1) * limit;
+
+    const baseSelect = `
       SELECT
         p.id, p.nome, p.cpf, p.cns, p.data_nascimento, p.sexo,
         p.nivel_risco, p.score_risco_atual,
@@ -104,41 +111,89 @@ async function listar(req, res) {
       ) al ON al.paciente_id = p.id
       WHERE 1=1
     `;
+
+    let where = '';
     const params = [];
 
     if (ativo !== undefined) {
-      sql += ' AND p.ativo = ?';
+      where += ' AND p.ativo = ?';
       params.push(ativo === 'true' || ativo === '1' ? 1 : 0);
     } else {
-      sql += ' AND p.ativo = 1';
+      where += ' AND p.ativo = 1';
     }
 
     if (nivel_risco) {
-      sql += ' AND p.nivel_risco = ?';
+      where += ' AND p.nivel_risco = ?';
       params.push(nivel_risco);
     }
     if (microarea_id) {
-      sql += ' AND d.microarea_id = ?';
+      where += ' AND d.microarea_id = ?';
       params.push(microarea_id);
     }
     if (acs_responsavel_id) {
-      sql += ' AND p.acs_responsavel_id = ?';
+      where += ' AND p.acs_responsavel_id = ?';
       params.push(acs_responsavel_id);
     }
     if (busca) {
-      sql += ' AND (p.nome LIKE ? OR p.cpf LIKE ? OR p.cns LIKE ?)';
+      where += ' AND (p.nome LIKE ? OR p.cpf LIKE ? OR p.cns LIKE ?)';
       const like = `%${busca}%`;
       params.push(like, like, like);
     }
     if (comorbidade) {
-      sql += ' AND EXISTS (SELECT 1 FROM paciente_comorbidades pc WHERE pc.paciente_id = p.id AND pc.comorbidade = ?)';
+      where += ' AND EXISTS (SELECT 1 FROM paciente_comorbidades pc WHERE pc.paciente_id = p.id AND pc.comorbidade = ?)';
       params.push(comorbidade);
     }
 
-    sql += ' ORDER BY p.nome ASC LIMIT 500';
+    // Filtros de aba (server-side)
+    if (filtro === 'cronicos') {
+      where += ' AND EXISTS (SELECT 1 FROM paciente_comorbidades pc WHERE pc.paciente_id = p.id AND pc.comorbidade != \'gestante\')';
+    } else if (filtro === 'gestantes') {
+      where += ' AND EXISTS (SELECT 1 FROM paciente_comorbidades pc WHERE pc.paciente_id = p.id AND pc.comorbidade = \'gestante\')';
+    } else if (filtro === 'sem-visita') {
+      where += ' AND (p.data_ultima_visita IS NULL OR p.data_ultima_visita < DATE_SUB(CURDATE(), INTERVAL 30 DAY))';
+    } else if (filtro === 'alertas') {
+      where += ' AND (COALESCE(al.total, 0) > 0 OR COALESCE(ev.total, 0) > 0)';
+    }
 
-    const [rows] = await db.query(sql, params);
-    res.json(rows);
+    // ORDER: risco primeiro por padrão (alto → moderado → baixo → nome)
+    const orderBy = ` ORDER BY
+      FIELD(p.nivel_risco, 'alto', 'moderado', 'baixo'),
+      p.nome ASC`;
+
+    // COUNT para o total (sem LIMIT)
+    const [countRows] = await db.query(
+      `SELECT COUNT(*) AS total FROM pacientes p
+       LEFT JOIN domicilios d  ON p.domicilio_id = d.id
+       LEFT JOIN microareas ma ON d.microarea_id = ma.id
+       LEFT JOIN (
+         SELECT paciente_id, COUNT(*) AS total
+           FROM encaminhamentos
+          WHERE status = 'pendente' AND data_prevista IS NOT NULL AND data_prevista < CURDATE()
+          GROUP BY paciente_id
+       ) ev ON ev.paciente_id = p.id
+       LEFT JOIN (
+         SELECT paciente_id, COUNT(*) AS total
+           FROM alertas
+          WHERE resolvido = 0 AND paciente_id IS NOT NULL
+          GROUP BY paciente_id
+       ) al ON al.paciente_id = p.id
+       WHERE 1=1 ${where}`,
+      params
+    );
+    const total = countRows[0].total;
+
+    const [rows] = await db.query(
+      `${baseSelect} ${where} ${orderBy} LIMIT ? OFFSET ?`,
+      [...params, limit, offset]
+    );
+
+    res.json({
+      data:    rows,
+      total,
+      page,
+      limit,
+      hasMore: offset + rows.length < total,
+    });
   } catch (err) {
     console.error('[PACIENTES/listar] Erro:', err);
     res.status(500).json({ message: 'Erro ao listar pacientes.', error: err.message });

@@ -1,8 +1,8 @@
 import { useMemo, useEffect, useState } from 'react'
 import { useAuthStore } from '@/store/authStore'
 import type { AcsUser } from '@/app/components/SideNav'
-import { pacientesService } from '@/services/pacientesService'
 import { alertasService } from '@/services/alertasService'
+import { visitasService } from '@/services/visitasService'
 
 function iniciaisDe(nome: string): string {
   const partes = (nome || '').trim().split(/\s+/).filter(Boolean)
@@ -13,15 +13,18 @@ function iniciaisDe(nome: string): string {
 
 export function useCurrentAcs(): AcsUser | null {
   const usuario = useAuthStore((s) => s.usuario)
-  const [semana, setSemana]           = useState({ visitas: 0, triagens: 0, alertas: 0 })
+  const [semana, setSemana]             = useState({ visitas: 0, triagens: 0, alertas: 0 })
   const [totalAlertas, setTotalAlertas] = useState(0)
 
   useEffect(() => {
     if (!usuario) return
-    pacientesService.listar({ ativo: 1 })
+    visitasService.stats()
       .then(({ data }) => {
-        const alertas = data.filter(p => p.nivel_risco === 'alto' || (p.alertas_pendentes ?? 0) > 0).length
-        setSemana({ visitas: data.length, triagens: data.length, alertas })
+        setSemana((prev) => ({
+          ...prev,
+          visitas:  data.semana_realizadas,
+          triagens: data.semana_triagens,
+        }))
       })
       .catch(() => {})
   }, [usuario])
@@ -29,7 +32,10 @@ export function useCurrentAcs(): AcsUser | null {
   useEffect(() => {
     if (!usuario) return
     alertasService.listar(false)
-      .then(({ data }) => setTotalAlertas(data.length))
+      .then(({ data }) => {
+        setTotalAlertas(data.length)
+        setSemana((prev) => ({ ...prev, alertas: data.filter(a => !a.resolvido).length }))
+      })
       .catch(() => {})
   }, [usuario])
 

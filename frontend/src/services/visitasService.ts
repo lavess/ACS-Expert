@@ -1,4 +1,6 @@
 import api from './api'
+import { cachedGet, queuedMutation } from './offlineMiddleware'
+import { cacheInvalidatePrefix } from './offlineCache'
 
 export interface VisitaAPI {
   id: number
@@ -99,15 +101,39 @@ export const TIPO_VISITA_LABEL: Record<TipoVisita, string> = {
   urgencia:    'Urgência',
 }
 
-export const visitasService = {
-  listar: (paciente_id: number) =>
-    api.get<VisitaAPI[]>('/visitas', { params: { paciente_id } }),
+export interface VisitasStats {
+  hoje_realizadas:   number
+  semana_realizadas: number
+  semana_triagens:   number
+  total_pacientes:   number
+  urgentes:          number
+  sem_visita:        number
+  enc_vencidos:      number
+}
 
-  registrar: (payload: {
+export const visitasService = {
+  stats: () =>
+    cachedGet<VisitasStats>('/visitas/stats').then((data) => ({ data })),
+
+  listar: (paciente_id: number) =>
+    cachedGet<VisitaAPI[]>('/visitas', { paciente_id }).then((data) => ({ data })),
+
+  registrar: async (payload: {
     paciente_id: number
     data_hora: string
     tipo_visita: TipoVisita
     observacao?: string
     flags?: VisitaFlag[]
-  }) => api.post<VisitaAPI>('/visitas', payload),
+  }) => {
+    const result = await queuedMutation<VisitaAPI>(
+      'POST', '/visitas',
+      payload as unknown as Record<string, unknown>,
+      { paciente_id: payload.paciente_id, tipo_visita: payload.tipo_visita, data_hora: payload.data_hora }
+    )
+    // Invalida cache do histórico desse paciente ao registrar online
+    if (!result.queued) {
+      await cacheInvalidatePrefix(`/visitas?paciente_id=${payload.paciente_id}`)
+    }
+    return result
+  },
 }

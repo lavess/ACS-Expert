@@ -143,9 +143,9 @@ export function NovoPaciente() {
     let cancelado = false;
     setBuscandoCpf(true);
     pacientesService.listar({ busca: digits, ativo: undefined })
-      .then(({ data }) => {
+      .then(({ data: res }) => {
         if (cancelado) return;
-        const encontrado = data.find(p => p.cpf && p.cpf.replace(/\D/g, '') === digits);
+        const encontrado = res.data.find(p => p.cpf && p.cpf.replace(/\D/g, '') === digits);
         setPacienteExistente(encontrado ?? null);
         if (encontrado) setNome(encontrado.nome);
       })

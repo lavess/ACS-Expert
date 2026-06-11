@@ -5,6 +5,86 @@ const { auth } = require('../middlewares/auth');
 
 router.use(auth);
 
+// ── GET /api/visitas/stats ────────────────────────────────────
+// Retorna contagens de visitas/triagens para o usuário logado,
+// com escopo automático por perfil (ACS → próprio, gestor/coord → municipio).
+router.get('/stats', async (req, res) => {
+  try {
+    const { id: userId, perfil } = req.usuario;
+    const isAcs = perfil === 'acs';
+
+    // Gestor/coordenador vê todos os pacientes (sem filtro de municipio —
+    // a tabela pacientes não tem municipio_id direto).
+    const acsFilter    = isAcs ? 'AND v.acs_id = ?'               : '';
+    const acsParams    = isAcs ? [userId]                          : [];
+    const pacFilter    = isAcs ? 'AND acs_responsavel_id = ?'      : '';
+    const pacParams    = isAcs ? [userId]                          : [];
+    const triagemFilter = isAcs ? 'AND t.acs_id = ?'              : '';
+    const triagemParams = isAcs ? [userId]                         : [];
+
+    const [[{ hoje_realizadas }]] = await db.query(
+      `SELECT COUNT(*) AS hoje_realizadas
+         FROM visitas v
+        WHERE DATE(v.data_hora) = CURDATE() ${acsFilter}`,
+      acsParams
+    );
+
+    const [[{ semana_realizadas }]] = await db.query(
+      `SELECT COUNT(*) AS semana_realizadas
+         FROM visitas v
+        WHERE YEARWEEK(v.data_hora, 1) = YEARWEEK(CURDATE(), 1) ${acsFilter}`,
+      acsParams
+    );
+
+    const [[{ semana_triagens }]] = await db.query(
+      `SELECT COUNT(*) AS semana_triagens
+         FROM triagens t
+        WHERE YEARWEEK(t.created_at, 1) = YEARWEEK(CURDATE(), 1) ${triagemFilter}`,
+      triagemParams
+    );
+
+    const [[{ total_pacientes }]] = await db.query(
+      `SELECT COUNT(*) AS total_pacientes FROM pacientes WHERE ativo = 1 ${pacFilter}`,
+      pacParams
+    );
+
+    const [[{ urgentes }]] = await db.query(
+      `SELECT COUNT(*) AS urgentes FROM pacientes WHERE ativo = 1 AND nivel_risco = 'alto' ${pacFilter}`,
+      pacParams
+    );
+
+    const [[{ sem_visita }]] = await db.query(
+      `SELECT COUNT(*) AS sem_visita FROM pacientes
+        WHERE ativo = 1
+          AND (data_ultima_visita IS NULL OR data_ultima_visita < DATE_SUB(CURDATE(), INTERVAL 30 DAY))
+          ${pacFilter}`,
+      pacParams
+    );
+
+    const [[{ enc_vencidos }]] = await db.query(
+      `SELECT COUNT(*) AS enc_vencidos FROM encaminhamentos e
+        WHERE e.status = 'pendente'
+          AND e.data_prevista IS NOT NULL
+          AND e.data_prevista < CURDATE()
+          ${isAcs ? 'AND e.acs_id = ?' : ''}`,
+      isAcs ? [userId] : []
+    );
+
+    res.json({
+      hoje_realizadas:   Number(hoje_realizadas),
+      semana_realizadas: Number(semana_realizadas),
+      semana_triagens:   Number(semana_triagens),
+      total_pacientes:   Number(total_pacientes),
+      urgentes:          Number(urgentes),
+      sem_visita:        Number(sem_visita),
+      enc_vencidos:      Number(enc_vencidos),
+    });
+  } catch (err) {
+    console.error('[VISITAS/stats]', err);
+    res.status(500).json({ message: 'Erro ao buscar estatísticas.', error: err.message });
+  }
+});
+
 // ── GET /api/visitas?paciente_id=X ───────────────────────────
 router.get('/', async (req, res) => {
   try {

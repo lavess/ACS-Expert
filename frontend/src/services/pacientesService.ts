@@ -1,4 +1,5 @@
 import api from './api'
+import { cachedGet } from './offlineMiddleware'
 import type { Comorbidade, NivelRisco, Sexo } from '@/types'
 
 // ── Payloads (snake_case — espelham o backend) ─────────────────
@@ -88,16 +89,30 @@ export interface ListarPacientesParams {
   nivel_risco?: NivelRisco
   microarea_id?: number
   acs_responsavel_id?: number
-  ativo?: boolean
+  ativo?: boolean | number
   comorbidade?: string
+  /** Filtro de aba server-side: cronicos | gestantes | sem-visita | alertas */
+  filtro?: 'cronicos' | 'gestantes' | 'sem-visita' | 'alertas'
+  page?: number
+  limit?: number
+}
+
+export interface PacientesPage {
+  data: PacienteListagem[]
+  total: number
+  page: number
+  limit: number
+  hasMore: boolean
 }
 
 export const pacientesService = {
   listar: (params?: ListarPacientesParams) =>
-    api.get<PacienteListagem[]>('/pacientes', { params }),
+    cachedGet<PacientesPage>('/pacientes', params as Record<string, unknown>)
+      .then((data) => ({ data })),
 
   buscarPorId: (id: number) =>
-    api.get<PacienteDetalhe>(`/pacientes/${id}`),
+    cachedGet<PacienteDetalhe>(`/pacientes/${id}`)
+      .then((data) => ({ data })),
 
   criar: (payload: CriarPacientePayload) =>
     api.post<PacienteListagem>('/pacientes', payload),

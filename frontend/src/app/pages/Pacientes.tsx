@@ -1,15 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import {
-  Search,
-  ChevronRight,
-  Plus,
-  AlertTriangle,
-  Loader2,
-  Users,
-  X,
-  ChevronDown,
-  MapPin,
-  Clock,
+  Search, ChevronRight, Plus, AlertTriangle, Loader2,
+  Users, X, ChevronDown, MapPin, Clock,
 } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { RiskBadge } from '../components/RiskBadge';
@@ -18,6 +10,7 @@ import {
   calcularIdade,
   riscoToUI,
   type PacienteListagem,
+  type ListarPacientesParams,
 } from '@/services/pacientesService';
 import { EncaminhamentoVencidoBadge } from '@/features/encaminhamentos';
 import { usePacientesFiltradosPorPerfil } from '@/hooks/usePacientesFiltradosPorPerfil';
@@ -26,115 +19,130 @@ type FiltroId = 'todos' | 'alto' | 'cronicos' | 'gestantes' | 'sem-visita' | 'al
 type SortOption = 'risco' | 'sem-visita' | 'nome';
 
 const SORT_LABELS: Record<SortOption, string> = {
-  'risco': 'Risco',
+  'risco':      'Risco',
   'sem-visita': 'Sem visita',
-  'nome': 'Nome A-Z',
+  'nome':       'Nome A-Z',
 };
 
-const RISK_ORDER: Record<string, number> = {
-  alto: 0,
-  moderado: 1,
-  baixo: 2,
-};
+const PAGE_LIMIT = 20;
 
 export function Pacientes() {
-  const navigate = useNavigate();
+  const navigate      = useNavigate();
   const filtrosPerfil = usePacientesFiltradosPorPerfil();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [activeFilter, setActiveFilter] = useState<FiltroId>('todos');
-  const [sort, setSort] = useState<SortOption>('risco');
-  const [sortOpen, setSortOpen] = useState(false);
-  const [pacientes, setPacientes] = useState<PacienteListagem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [erro, setErro] = useState<string | null>(null);
 
-  // Stats computed from full list (only when showing "todos")
-  const stats = useMemo(() => {
-    const base = activeFilter === 'todos' ? pacientes : pacientes;
-    const total = base.length;
-    const alto = base.filter((p) => p.nivel_risco === 'alto').length;
-    const alertas = base.filter(
-      (p) => (p.alertas_pendentes ?? 0) > 0 || (p.total_encaminhamentos_vencidos ?? 0) > 0
-    ).length;
-    return { total, alto, alertas };
-  }, [pacientes, activeFilter]);
+  const [searchTerm,    setSearchTerm]    = useState('');
+  const [debouncedBusca, setDebouncedBusca] = useState('');
+  const [activeFilter,  setActiveFilter]  = useState<FiltroId>('todos');
+  const [sort,          setSort]          = useState<SortOption>('risco');
+  const [sortOpen,      setSortOpen]      = useState(false);
 
-  const filters: { id: FiltroId; label: string; count?: number }[] = [
-    { id: 'todos', label: 'Todos', count: stats.total },
-    { id: 'alto', label: 'Alto risco', count: stats.alto },
-    { id: 'cronicos', label: 'Cronicos' },
-    { id: 'gestantes', label: 'Gestantes' },
-    { id: 'sem-visita', label: 'Sem visita recente' },
-    { id: 'alertas', label: 'Alertas', count: stats.alertas },
-  ];
+  // Estabiliza filtrosPerfil em ref para não recriar carregarPagina a cada render
+  const filtrosPerfilRef = useRef(filtrosPerfil);
+  filtrosPerfilRef.current = filtrosPerfil;
+
+  // Paginação
+  const [pacientes,  setPacientes]  = useState<PacienteListagem[]>([]);
+  const [total,      setTotal]      = useState(0);
+  const [page,       setPage]       = useState(1);
+  const [hasMore,    setHasMore]    = useState(false);
+  const [loading,    setLoading]    = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [erro,       setErro]       = useState<string | null>(null);
+
+  // Sentinel para IntersectionObserver
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   // Debounce da busca
-  const [debouncedBusca, setDebouncedBusca] = useState('');
   useEffect(() => {
     const t = setTimeout(() => setDebouncedBusca(searchTerm.trim()), 350);
     return () => clearTimeout(t);
   }, [searchTerm]);
 
+  // Reset ao mudar filtro ou busca
   useEffect(() => {
-    let cancelado = false;
-    async function carregar() {
-      setLoading(true);
-      setErro(null);
-      try {
-        const { data } = await pacientesService.listar({
-          ...filtrosPerfil,
-          busca: debouncedBusca || undefined,
-          nivel_risco: activeFilter === 'alto' ? 'alto' : undefined,
-        });
-        if (!cancelado) setPacientes(data);
-      } catch (err: any) {
-        if (!cancelado) {
-          setErro(err?.response?.data?.message ?? 'Erro ao carregar pacientes.');
+    setPacientes([]);
+    setTotal(0);
+    setPage(1);
+    setHasMore(false);
+  }, [debouncedBusca, activeFilter, sort]);
+
+  // Carrega uma página — filtrosPerfil via ref para não recriar o callback
+  const carregarPagina = useCallback(async (pageNum: number, append: boolean) => {
+    if (pageNum === 1) setLoading(true); else setLoadingMore(true);
+    setErro(null);
+
+    try {
+      const params: ListarPacientesParams = {
+        ...filtrosPerfilRef.current,
+        busca:       debouncedBusca || undefined,
+        nivel_risco: activeFilter === 'alto' ? 'alto' : undefined,
+        filtro:      (['cronicos', 'gestantes', 'sem-visita', 'alertas'] as FiltroId[]).includes(activeFilter)
+          ? (activeFilter as ListarPacientesParams['filtro'])
+          : undefined,
+        page:  pageNum,
+        limit: PAGE_LIMIT,
+      };
+
+      const { data: res } = await pacientesService.listar(params);
+      setPacientes((prev) => append ? [...prev, ...res.data] : res.data);
+      setTotal(res.total);
+      setHasMore(res.hasMore);
+      setPage(pageNum);
+    } catch (err: any) {
+      setErro(err?.response?.data?.message ?? 'Erro ao carregar pacientes.');
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  }, [debouncedBusca, activeFilter]); // filtrosPerfil via ref — estável
+
+  // Carrega página 1 quando filtros mudam (page volta a 1 via effect acima)
+  useEffect(() => {
+    carregarPagina(1, false);
+  }, [carregarPagina]);
+
+  // IntersectionObserver — dispara ao chegar no sentinel
+  useEffect(() => {
+    if (!sentinelRef.current) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore && !loading) {
+          carregarPagina(page + 1, true);
         }
-      } finally {
-        if (!cancelado) setLoading(false);
-      }
+      },
+      { rootMargin: '200px' }
+    );
+    observer.observe(sentinelRef.current);
+    return () => observer.disconnect();
+  }, [hasMore, loadingMore, loading, page, carregarPagina]);
+
+  // Ordenação client-side sobre o que já está carregado
+  const listaOrdenada = [...pacientes].sort((a, b) => {
+    if (sort === 'nome') return a.nome.localeCompare(b.nome, 'pt-BR');
+    if (sort === 'sem-visita') {
+      const da = a.data_ultima_visita ? new Date(a.data_ultima_visita).getTime() : 0;
+      const db = b.data_ultima_visita ? new Date(b.data_ultima_visita).getTime() : 0;
+      return da - db;
     }
-    carregar();
-    return () => { cancelado = true; };
-  }, [debouncedBusca, activeFilter]);
+    // risco: backend já ordena, mas mantém consistência ao acumular páginas
+    const RISK_ORDER: Record<string, number> = { alto: 0, moderado: 1, baixo: 2 };
+    return (RISK_ORDER[a.nivel_risco] ?? 99) - (RISK_ORDER[b.nivel_risco] ?? 99);
+  });
 
-  const listaFiltrada = useMemo(() => {
-    let filtered = [...pacientes];
+  const stats = {
+    total,
+    alto:    pacientes.filter((p) => p.nivel_risco === 'alto').length,
+    alertas: pacientes.filter((p) => (p.alertas_pendentes ?? 0) > 0 || (p.total_encaminhamentos_vencidos ?? 0) > 0).length,
+  };
 
-    // Filter
-    if (activeFilter === 'cronicos') {
-      filtered = filtered.filter((p) => !!p.tem_comorbidade);
-    } else if (activeFilter === 'gestantes') {
-      filtered = filtered.filter((p) => !!p.is_gestante);
-    } else if (activeFilter === 'sem-visita') {
-      const limite = new Date();
-      limite.setDate(limite.getDate() - 30);
-      filtered = filtered.filter((p) => {
-        if (!p.data_ultima_visita) return true;
-        return new Date(p.data_ultima_visita) < limite;
-      });
-    } else if (activeFilter === 'alertas') {
-      filtered = filtered.filter(
-        (p) => (p.alertas_pendentes ?? 0) > 0 || (p.total_encaminhamentos_vencidos ?? 0) > 0
-      );
-    }
-
-    // Sort
-    if (sort === 'risco') {
-      filtered.sort((a, b) => (RISK_ORDER[a.nivel_risco] ?? 99) - (RISK_ORDER[b.nivel_risco] ?? 99));
-    } else if (sort === 'sem-visita') {
-      filtered.sort((a, b) => {
-        const da = a.data_ultima_visita ? new Date(a.data_ultima_visita).getTime() : 0;
-        const db = b.data_ultima_visita ? new Date(b.data_ultima_visita).getTime() : 0;
-        return da - db; // oldest first
-      });
-    } else if (sort === 'nome') {
-      filtered.sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
-    }
-
-    return filtered;
-  }, [pacientes, activeFilter, sort]);
+  const filters: { id: FiltroId; label: string; count?: number }[] = [
+    { id: 'todos',      label: 'Todos',           count: total },
+    { id: 'alto',       label: 'Alto risco' },
+    { id: 'cronicos',   label: 'Crônicos' },
+    { id: 'gestantes',  label: 'Gestantes' },
+    { id: 'sem-visita', label: 'Sem visita recente' },
+    { id: 'alertas',    label: 'Alertas' },
+  ];
 
   const iniciais = (nome: string) =>
     nome.split(' ').filter(Boolean).map((n) => n[0]).join('').slice(0, 2).toUpperCase();
@@ -144,19 +152,17 @@ export function Pacientes() {
     const dias = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000));
     if (dias === 0) return 'hoje';
     if (dias === 1) return 'ontem';
-    return `ha ${dias} dias`;
+    return `há ${dias} dias`;
   };
 
   const borderColorByRisk = (nivel: string) => {
-    if (nivel === 'alto') return 'border-l-acs-vermelho';
+    if (nivel === 'alto')     return 'border-l-acs-vermelho';
     if (nivel === 'moderado') return 'border-l-acs-amar';
     return 'border-l-acs-verde';
   };
 
-  const avatarBgByRisk = (nivel: string) => {
-    if (nivel === 'alto') return 'bg-acs-vermelho-100';
-    return 'bg-acs-paper-2';
-  };
+  const avatarBgByRisk = (nivel: string) =>
+    nivel === 'alto' ? 'bg-acs-vermelho-100' : 'bg-acs-paper-2';
 
   return (
     <div className="min-h-screen bg-background pb-32 lg:pb-8">
@@ -167,7 +173,6 @@ export function Pacientes() {
             <h2 className="font-display font-bold text-acs-ink text-lg lg:text-xl pl-12 lg:pl-0">
               Meus Pacientes
             </h2>
-            {/* Desktop: Novo paciente button */}
             <button
               onClick={() => navigate('/novo-paciente')}
               className="hidden lg:inline-flex items-center gap-2 bg-acs-coral text-white rounded-xl px-5 py-3 font-semibold text-sm hover:brightness-95 transition-all"
@@ -180,28 +185,16 @@ export function Pacientes() {
           {/* Stats row */}
           <div className="grid grid-cols-3 gap-3 mb-4">
             <div className="bg-white rounded-xl border border-acs-line px-3 py-2.5 text-center">
-              <p className="font-mono text-[10px] uppercase tracking-[.14em] text-acs-ink-3">
-                Total
-              </p>
-              <p className="font-display font-bold text-acs-ink text-lg leading-tight">
-                {stats.total}
-              </p>
+              <p className="font-mono text-[10px] uppercase tracking-[.14em] text-acs-ink-3">Total</p>
+              <p className="font-display font-bold text-acs-ink text-lg leading-tight">{total}</p>
             </div>
             <div className="bg-white rounded-xl border border-acs-line px-3 py-2.5 text-center">
-              <p className="font-mono text-[10px] uppercase tracking-[.14em] text-acs-ink-3">
-                Alto risco
-              </p>
-              <p className="font-display font-bold text-acs-vermelho text-lg leading-tight">
-                {stats.alto}
-              </p>
+              <p className="font-mono text-[10px] uppercase tracking-[.14em] text-acs-ink-3">Alto risco</p>
+              <p className="font-display font-bold text-acs-vermelho text-lg leading-tight">{stats.alto}</p>
             </div>
             <div className="bg-white rounded-xl border border-acs-line px-3 py-2.5 text-center">
-              <p className="font-mono text-[10px] uppercase tracking-[.14em] text-acs-ink-3">
-                Alertas
-              </p>
-              <p className="font-display font-bold text-acs-coral text-lg leading-tight">
-                {stats.alertas}
-              </p>
+              <p className="font-mono text-[10px] uppercase tracking-[.14em] text-acs-ink-3">Alertas</p>
+              <p className="font-display font-bold text-acs-coral text-lg leading-tight">{stats.alertas}</p>
             </div>
           </div>
 
@@ -243,13 +236,11 @@ export function Pacientes() {
               >
                 {filter.label}
                 {filter.count !== undefined && (
-                  <span
-                    className={`font-mono text-[10px] px-1.5 py-0.5 rounded-full ${
-                      activeFilter === filter.id
-                        ? 'bg-white/20 text-white'
-                        : 'bg-acs-paper-2 text-acs-ink-3'
-                    }`}
-                  >
+                  <span className={`font-mono text-[10px] px-1.5 py-0.5 rounded-full ${
+                    activeFilter === filter.id
+                      ? 'bg-white/20 text-white'
+                      : 'bg-acs-paper-2 text-acs-ink-3'
+                  }`}>
                     {filter.count}
                   </span>
                 )}
@@ -263,9 +254,7 @@ export function Pacientes() {
               onClick={() => setSortOpen(!sortOpen)}
               className="inline-flex items-center gap-1.5 text-sm text-acs-ink-2 hover:text-acs-ink transition-colors"
             >
-              <span className="font-mono text-[10px] uppercase tracking-[.14em] text-acs-ink-3">
-                Ordenar:
-              </span>
+              <span className="font-mono text-[10px] uppercase tracking-[.14em] text-acs-ink-3">Ordenar:</span>
               <span className="font-medium">{SORT_LABELS[sort]}</span>
               <ChevronDown size={14} className={`transition-transform ${sortOpen ? 'rotate-180' : ''}`} />
             </button>
@@ -295,6 +284,7 @@ export function Pacientes() {
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 lg:px-8 py-6">
+        {/* Loading inicial */}
         {loading && (
           <div className="flex items-center justify-center py-20 text-acs-ink-3">
             <Loader2 size={24} className="animate-spin mr-2" />
@@ -308,33 +298,28 @@ export function Pacientes() {
           </div>
         )}
 
-        {!loading && !erro && listaFiltrada.length === 0 && (
+        {!loading && !erro && listaOrdenada.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 text-acs-ink-3">
             <Users size={48} strokeWidth={1.4} className="mb-4 text-acs-ink-4" />
-            <p className="text-base font-medium text-acs-ink-2 mb-1">
-              Nenhum paciente encontrado
-            </p>
-            <p className="text-sm text-acs-ink-3">
-              Tente ajustar os filtros ou o termo de busca.
-            </p>
+            <p className="text-base font-medium text-acs-ink-2 mb-1">Nenhum paciente encontrado</p>
+            <p className="text-sm text-acs-ink-3">Tente ajustar os filtros ou o termo de busca.</p>
           </div>
         )}
 
-        {!loading && !erro && listaFiltrada.length > 0 && (
+        {!loading && !erro && listaOrdenada.length > 0 && (
           <>
-            {/* Count line */}
             <p className="font-mono text-[11px] uppercase tracking-[.14em] text-acs-ink-3 mb-4">
-              {listaFiltrada.length} paciente{listaFiltrada.length !== 1 ? 's' : ''}
+              {listaOrdenada.length} de {total} paciente{total !== 1 ? 's' : ''}
             </p>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
-              {listaFiltrada.map((paciente) => {
-                const risco = riscoToUI(paciente.nivel_risco);
-                const idade = calcularIdade(paciente.data_nascimento);
-                const endereco = [paciente.logradouro, paciente.numero].filter(Boolean).join(', ');
+              {listaOrdenada.map((paciente) => {
+                const risco            = riscoToUI(paciente.nivel_risco);
+                const idade            = calcularIdade(paciente.data_nascimento);
+                const endereco         = [paciente.logradouro, paciente.numero].filter(Boolean).join(', ');
                 const alertasPendentes = paciente.alertas_pendentes ?? 0;
                 const totalVencidos    = paciente.total_encaminhamentos_vencidos ?? 0;
-                const scoreRisco = paciente.score_risco_atual ?? 0;
+                const scoreRisco       = paciente.score_risco_atual ?? 0;
 
                 return (
                   <button
@@ -343,21 +328,13 @@ export function Pacientes() {
                     className={`w-full bg-white rounded-2xl shadow-[0_1px_2px_rgba(10,20,40,.06)] border border-acs-line border-l-4 ${borderColorByRisk(paciente.nivel_risco)} hover:shadow-[0_8px_20px_rgba(10,20,40,.12)] transition-all text-left p-4`}
                   >
                     <div className="flex items-start gap-3">
-                      {/* Avatar */}
-                      <div
-                        className={`w-10 h-10 rounded-full ${avatarBgByRisk(paciente.nivel_risco)} flex items-center justify-center text-acs-ink-2 font-semibold text-sm flex-shrink-0`}
-                      >
+                      <div className={`w-10 h-10 rounded-full ${avatarBgByRisk(paciente.nivel_risco)} flex items-center justify-center text-acs-ink-2 font-semibold text-sm flex-shrink-0`}>
                         {iniciais(paciente.nome)}
                       </div>
-
-                      {/* Content */}
                       <div className="flex-1 min-w-0">
-                        {/* Row 1: Name + age/sex + microarea | RiskBadge + score */}
                         <div className="flex items-start justify-between gap-2 mb-1">
                           <div className="min-w-0">
-                            <h3 className="font-semibold text-acs-ink text-sm leading-tight truncate">
-                              {paciente.nome}
-                            </h3>
+                            <h3 className="font-semibold text-acs-ink text-sm leading-tight truncate">{paciente.nome}</h3>
                             <p className="text-xs text-acs-ink-3 mt-0.5">
                               {idade} anos · {paciente.sexo === 'm' ? 'M' : 'F'}
                               {paciente.microarea_nome && (
@@ -368,14 +345,11 @@ export function Pacientes() {
                           <div className="flex items-center gap-2 flex-shrink-0">
                             <RiskBadge level={risco} />
                             {scoreRisco > 0 && (
-                              <span className="font-mono text-[10px] text-acs-ink-3 font-semibold">
-                                {scoreRisco}
-                              </span>
+                              <span className="font-mono text-[10px] text-acs-ink-3 font-semibold">{scoreRisco}</span>
                             )}
                           </div>
                         </div>
 
-                        {/* Sinalizações */}
                         {(alertasPendentes > 0 || totalVencidos > 0) && (
                           <div className="flex flex-wrap gap-1.5 mb-1.5">
                             {alertasPendentes > 0 && (
@@ -390,11 +364,10 @@ export function Pacientes() {
                           </div>
                         )}
 
-                        {/* Address + last visit */}
                         <div className="flex items-center gap-3 text-xs text-acs-ink-3 mt-1">
                           <span className="inline-flex items-center gap-1 truncate">
                             <MapPin size={12} className="flex-shrink-0" />
-                            {endereco || 'Endereco nao informado'}
+                            {endereco || 'Endereço não informado'}
                           </span>
                           <span className="inline-flex items-center gap-1 flex-shrink-0">
                             <Clock size={12} />
@@ -402,19 +375,31 @@ export function Pacientes() {
                           </span>
                         </div>
                       </div>
-
-                      {/* Chevron */}
                       <ChevronRight size={18} className="text-acs-ink-4 flex-shrink-0 mt-2.5" />
                     </div>
                   </button>
                 );
               })}
             </div>
+
+            {/* Sentinel + loading more */}
+            <div ref={sentinelRef} className="h-1" />
+            {loadingMore && (
+              <div className="flex items-center justify-center py-6 gap-2 text-acs-ink-3">
+                <Loader2 size={18} className="animate-spin" />
+                <span className="text-sm">Carregando mais...</span>
+              </div>
+            )}
+            {!hasMore && listaOrdenada.length > 0 && (
+              <p className="text-center font-mono text-[10px] uppercase tracking-[.14em] text-acs-ink-4 py-6">
+                {total} paciente{total !== 1 ? 's' : ''} no total
+              </p>
+            )}
           </>
         )}
       </div>
 
-      {/* FAB - mobile only */}
+      {/* FAB mobile */}
       <button
         onClick={() => navigate('/novo-paciente')}
         className="fixed bottom-20 right-4 lg:hidden w-14 h-14 rounded-2xl bg-acs-coral text-white shadow-[0_8px_20px_rgba(231,111,74,.45)] flex items-center justify-center hover:brightness-95 hover:scale-110 transition-all z-50"

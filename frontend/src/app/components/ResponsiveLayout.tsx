@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router'
 import { Menu, X, Heart, MapPin, Users, ClipboardList, ShieldCheck } from 'lucide-react'
 import { TourAjuda } from './TourAjuda'
 import { BottomNav } from './BottomNav'
+import { OfflineBanner } from './OfflineBanner'
 import {
   SideNav,
   MobileDrawer,
@@ -82,6 +83,7 @@ export function ResponsiveLayout({ children, showNav = true }: ResponsiveLayoutP
 
   return (
     <div className="min-h-screen bg-background">
+      <OfflineBanner />
       <div className="flex h-screen overflow-hidden">
         {/* Desktop: sidebar persistente */}
         {showSideNav && (

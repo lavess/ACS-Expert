@@ -55,8 +55,8 @@ export function Agenda() {
   useEffect(() => {
     async function carregar() {
       try {
-        const { data } = await pacientesService.listar({ ...filtrosPerfil, ativo: 1 });
-        const ordenados = [...data].sort((a, b) => {
+        const { data: res } = await pacientesService.listar({ ...filtrosPerfil, ativo: 1, limit: 100 });
+        const ordenados = [...res.data].sort((a, b) => {
           const ordem = { alto: 0, medio: 1, baixo: 2 };
           return (ordem[a.nivel_risco] ?? 2) - (ordem[b.nivel_risco] ?? 2);
         });

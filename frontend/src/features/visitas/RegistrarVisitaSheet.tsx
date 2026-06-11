@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { X, Loader2, CheckCircle2, Home, Search, RotateCcw, AlertTriangle, ShieldAlert } from 'lucide-react'
+import { X, Loader2, CheckCircle2, CloudUpload, Home, Search, RotateCcw, AlertTriangle, ShieldAlert } from 'lucide-react'
 import {
   visitasService,
   TIPO_VISITA_LABEL,
@@ -38,6 +38,7 @@ export function RegistrarVisitaSheet({ open, pacienteId, pacienteNome, onClose, 
   const [salvando, setSalvando]     = useState(false)
   const [erro, setErro]             = useState<string | null>(null)
   const [sucesso, setSucesso]       = useState(false)
+  const [enfileirado, setEnfileirado] = useState(false)
   const obsRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
@@ -49,6 +50,7 @@ export function RegistrarVisitaSheet({ open, pacienteId, pacienteNome, onClose, 
       setAlertasAberto(false)
       setErro(null)
       setSucesso(false)
+      setEnfileirado(false)
     }
   }, [open])
 
@@ -56,7 +58,7 @@ export function RegistrarVisitaSheet({ open, pacienteId, pacienteNome, onClose, 
     setSalvando(true)
     setErro(null)
     try {
-      await visitasService.registrar({
+      const result = await visitasService.registrar({
         paciente_id: pacienteId,
         data_hora:   dataHora.length === 16 ? dataHora + ':00' : dataHora,
         tipo_visita: tipo,
@@ -64,9 +66,10 @@ export function RegistrarVisitaSheet({ open, pacienteId, pacienteNome, onClose, 
         flags:       flags.length > 0 ? flags : undefined,
       })
       setSucesso(true)
-      setTimeout(() => { onSuccess(); onClose() }, 1200)
+      setEnfileirado(result.queued)
+      setTimeout(() => { onSuccess(); onClose() }, result.queued ? 2000 : 1200)
     } catch (e: any) {
-      setErro(e?.response?.data?.message ?? 'Erro ao registrar visita.')
+      setErro(e?.message ?? e?.response?.data?.message ?? 'Erro ao registrar visita.')
     } finally {
       setSalvando(false)
     }
@@ -254,7 +257,9 @@ export function RegistrarVisitaSheet({ open, pacienteId, pacienteNome, onClose, 
             className="w-full py-3.5 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2 bg-acs-azul text-white hover:bg-acs-azul-700 disabled:opacity-50"
           >
             {sucesso ? (
-              <><CheckCircle2 size={18} strokeWidth={2.2} /> Visita registrada!</>
+              enfileirado
+                ? <><CloudUpload size={18} strokeWidth={2.2} /> Salvo offline — será sincronizado</>
+                : <><CheckCircle2 size={18} strokeWidth={2.2} /> Visita registrada!</>
             ) : salvando ? (
               <><Loader2 size={18} className="animate-spin" /> Salvando…</>
             ) : (

@@ -1,4 +1,6 @@
 import api from './api'
+import { cachedGet, queuedMutation } from './offlineMiddleware'
+import { cacheInvalidatePrefix } from './offlineCache'
 import type {
   StatusEncaminhamento,
   TipoEncaminhamento,
@@ -73,19 +75,31 @@ export interface ListarEncaminhamentosParams {
 
 export const encaminhamentosService = {
   listar: (params?: ListarEncaminhamentosParams) =>
-    api.get<EncaminhamentoAPI[]>('/encaminhamentos', { params }),
+    cachedGet<EncaminhamentoAPI[]>('/encaminhamentos', params as Record<string, unknown>)
+      .then((data) => ({ data })),
 
   buscarPorId: (id: number) =>
-    api.get<EncaminhamentoAPI>(`/encaminhamentos/${id}`),
+    cachedGet<EncaminhamentoAPI>(`/encaminhamentos/${id}`)
+      .then((data) => ({ data })),
 
-  criar: (payload: CriarEncaminhamentoPayload) =>
-    api.post<EncaminhamentoAPI>('/encaminhamentos', payload),
+  criar: async (payload: CriarEncaminhamentoPayload) => {
+    const result = await queuedMutation<EncaminhamentoAPI>(
+      'POST', '/encaminhamentos',
+      payload as unknown as Record<string, unknown>,
+      { paciente_id: payload.paciente_id, tipo: payload.tipo, motivo: payload.motivo, status: 'pendente' }
+    )
+    if (!result.queued) await cacheInvalidatePrefix('/encaminhamentos')
+    return result
+  },
 
-  registrarDesfecho: (id: number, payload: RegistrarDesfechoPayload) =>
-    api.put<EncaminhamentoAPI & { alerta?: { id: number; jaExistia: boolean } | null }>(
-      `/encaminhamentos/${id}/desfecho`,
-      payload
-    ),
+  registrarDesfecho: async (id: number, payload: RegistrarDesfechoPayload) => {
+    const result = await queuedMutation<EncaminhamentoAPI & { alerta?: unknown }>(
+      'PUT', `/encaminhamentos/${id}/desfecho`,
+      payload as unknown as Record<string, unknown>
+    )
+    if (!result.queued) await cacheInvalidatePrefix('/encaminhamentos')
+    return result
+  },
 }
 
 // ── Helpers de UI ───────────────────────────────────────────
