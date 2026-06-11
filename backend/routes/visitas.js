@@ -35,7 +35,7 @@ router.post('/', async (req, res) => {
   try {
     await conn.beginTransaction();
 
-    const { paciente_id, data_hora, tipo_visita, observacao } = req.body;
+    const { paciente_id, data_hora, tipo_visita, observacao, flags } = req.body;
     const acs_id = req.usuario.id;
 
     if (!paciente_id || !data_hora || !tipo_visita) {
@@ -47,10 +47,12 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ message: 'tipo_visita inválido.' });
     }
 
+    const flagsJson = Array.isArray(flags) && flags.length > 0 ? JSON.stringify(flags) : null;
+
     const [result] = await conn.query(
-      `INSERT INTO visitas (paciente_id, acs_id, data_hora, tipo_visita, status, observacao, created_at)
-       VALUES (?, ?, ?, ?, 'realizada', ?, NOW())`,
-      [paciente_id, acs_id, data_hora, tipo_visita, observacao ?? null]
+      `INSERT INTO visitas (paciente_id, acs_id, data_hora, tipo_visita, status, observacao, flags, created_at)
+       VALUES (?, ?, ?, ?, 'realizada', ?, ?, NOW())`,
+      [paciente_id, acs_id, data_hora, tipo_visita, observacao ?? null, flagsJson]
     );
 
     // Atualiza data_ultima_visita no paciente

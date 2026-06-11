@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Home, Search, RotateCcw, AlertTriangle, Loader2, ClipboardList } from 'lucide-react'
-import { visitasService, TIPO_VISITA_LABEL, type VisitaAPI, type TipoVisita } from '@/services/visitasService'
+import { visitasService, TIPO_VISITA_LABEL, VISITA_FLAGS, type VisitaAPI, type TipoVisita } from '@/services/visitasService'
 
 interface Props {
   pacienteId: number
@@ -92,6 +92,25 @@ export function HistoricoVisitas({ pacienteId, refreshKey }: Props) {
                     {fmtDataHora(v.data_hora)}
                   </span>
                 </div>
+                {/* Flags / alertas */}
+                {v.flags && v.flags.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-1.5">
+                    {v.flags.map((flagId) => {
+                      const cfg = VISITA_FLAGS.find((f) => f.id === flagId)
+                      if (!cfg) return null
+                      return (
+                        <span
+                          key={flagId}
+                          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md font-mono text-[9px] font-semibold uppercase tracking-[.08em]"
+                          style={{ backgroundColor: cfg.cor + '18', color: cfg.cor }}
+                        >
+                          {cfg.urgente && '⚠ '}
+                          {cfg.label}
+                        </span>
+                      )
+                    })}
+                  </div>
+                )}
                 {v.observacao && (
                   <p className="text-xs text-acs-ink-2 mt-1 leading-relaxed">{v.observacao}</p>
                 )}

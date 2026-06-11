@@ -9,8 +9,86 @@ export interface VisitaAPI {
   tipo_visita: TipoVisita
   status: 'planejada' | 'realizada' | 'cancelada' | 'remarcada'
   observacao: string | null
+  flags: VisitaFlag[] | null
   created_at: string
 }
+
+export type VisitaFlag =
+  | 'agua_parada'
+  | 'familia_vulneravel'
+  | 'animal_sem_vacina'
+  | 'crianca_fora_escola'
+  | 'idoso_sozinho'
+  | 'condicao_moradia_precaria'
+  | 'violencia_suspeita'
+  | 'ausente'
+
+export interface VisitaFlagConfig {
+  id: VisitaFlag
+  label: string
+  descricao: string
+  cor: string
+  urgente: boolean
+}
+
+export const VISITA_FLAGS: VisitaFlagConfig[] = [
+  {
+    id: 'agua_parada',
+    label: 'Água parada',
+    descricao: 'Ponto de água parada — risco de dengue/mosquitos',
+    cor: '#F2B134',
+    urgente: true,
+  },
+  {
+    id: 'familia_vulneravel',
+    label: 'Família vulnerável',
+    descricao: 'Família em situação de vulnerabilidade social',
+    cor: '#E76F4A',
+    urgente: true,
+  },
+  {
+    id: 'animal_sem_vacina',
+    label: 'Animal sem vacinação',
+    descricao: 'Cães ou gatos sem vacinação/castração com acesso à rua',
+    cor: '#8B5CF6',
+    urgente: false,
+  },
+  {
+    id: 'crianca_fora_escola',
+    label: 'Criança fora da escola',
+    descricao: 'Criança em idade escolar sem frequência',
+    cor: '#E76F4A',
+    urgente: true,
+  },
+  {
+    id: 'idoso_sozinho',
+    label: 'Idoso mora sozinho',
+    descricao: 'Idoso sem suporte familiar ou cuidador',
+    cor: '#F2B134',
+    urgente: false,
+  },
+  {
+    id: 'condicao_moradia_precaria',
+    label: 'Moradia precária',
+    descricao: 'Condição inadequada de habitação',
+    cor: '#C8364A',
+    urgente: false,
+  },
+  {
+    id: 'violencia_suspeita',
+    label: 'Suspeita de violência',
+    descricao: 'Indícios de violência doméstica ou maus-tratos',
+    cor: '#C8364A',
+    urgente: true,
+  },
+  {
+    id: 'ausente',
+    label: 'Morador ausente',
+    descricao: 'Ninguém encontrado no domicílio',
+    cor: '#6C7788',
+    urgente: false,
+  },
+]
 
 export type TipoVisita = 'rotina' | 'busca_ativa' | 'retorno' | 'urgencia'
 
@@ -30,5 +108,6 @@ export const visitasService = {
     data_hora: string
     tipo_visita: TipoVisita
     observacao?: string
+    flags?: VisitaFlag[]
   }) => api.post<VisitaAPI>('/visitas', payload),
 }

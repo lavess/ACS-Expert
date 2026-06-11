@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
-import { X, Loader2, CheckCircle2, Home, Search, RotateCcw, AlertTriangle } from 'lucide-react'
+import { X, Loader2, CheckCircle2, Home, Search, RotateCcw, AlertTriangle, ShieldAlert } from 'lucide-react'
 import {
   visitasService,
   TIPO_VISITA_LABEL,
+  VISITA_FLAGS,
   type TipoVisita,
+  type VisitaFlag,
 } from '@/services/visitasService'
 
 interface Props {
@@ -31,6 +33,7 @@ export function RegistrarVisitaSheet({ open, pacienteId, pacienteNome, onClose, 
   const [tipo, setTipo]             = useState<TipoVisita>('rotina')
   const [dataHora, setDataHora]     = useState(dataHoraLocal)
   const [observacao, setObservacao] = useState('')
+  const [flags, setFlags]           = useState<VisitaFlag[]>([])
   const [salvando, setSalvando]     = useState(false)
   const [erro, setErro]             = useState<string | null>(null)
   const [sucesso, setSucesso]       = useState(false)
@@ -41,6 +44,7 @@ export function RegistrarVisitaSheet({ open, pacienteId, pacienteNome, onClose, 
       setTipo('rotina')
       setDataHora(dataHoraLocal())
       setObservacao('')
+      setFlags([])
       setErro(null)
       setSucesso(false)
     }
@@ -55,6 +59,7 @@ export function RegistrarVisitaSheet({ open, pacienteId, pacienteNome, onClose, 
         data_hora:   dataHora.length === 16 ? dataHora + ':00' : dataHora,
         tipo_visita: tipo,
         observacao:  observacao.trim() || undefined,
+        flags:       flags.length > 0 ? flags : undefined,
       })
       setSucesso(true)
       setTimeout(() => { onSuccess(); onClose() }, 1200)
@@ -137,6 +142,69 @@ export function RegistrarVisitaSheet({ open, pacienteId, pacienteNome, onClose, 
               onChange={(e) => setDataHora(e.target.value)}
               className="w-full border border-acs-line rounded-xl px-4 py-3 text-sm text-acs-ink focus:outline-none focus:ring-2 focus:ring-acs-azul"
             />
+          </div>
+
+          {/* Alertas sanitários */}
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <ShieldAlert size={14} className="text-acs-coral" strokeWidth={2} />
+              <label className="font-mono text-[10px] uppercase tracking-[.14em] text-acs-ink-3">
+                Alertas identificados
+              </label>
+              {flags.length > 0 && (
+                <span className="ml-auto font-mono text-[10px] font-bold text-acs-coral">
+                  {flags.length} selecionado{flags.length > 1 ? 's' : ''}
+                </span>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              {VISITA_FLAGS.map((flag) => {
+                const ativo = flags.includes(flag.id)
+                return (
+                  <button
+                    key={flag.id}
+                    type="button"
+                    onClick={() =>
+                      setFlags((prev) =>
+                        ativo ? prev.filter((f) => f !== flag.id) : [...prev, flag.id]
+                      )
+                    }
+                    className={`w-full flex items-start gap-3 px-3 py-2.5 rounded-xl border text-left transition-all ${
+                      ativo ? 'border-current' : 'border-acs-line bg-white hover:bg-acs-paper'
+                    }`}
+                    style={ativo ? { borderColor: flag.cor, backgroundColor: flag.cor + '12' } : {}}
+                  >
+                    {/* Checkbox visual */}
+                    <span
+                      className={`w-4 h-4 rounded flex-shrink-0 mt-0.5 flex items-center justify-center border-2 transition-all ${
+                        ativo ? 'border-current' : 'border-acs-ink-3'
+                      }`}
+                      style={ativo ? { borderColor: flag.cor, backgroundColor: flag.cor } : {}}
+                    >
+                      {ativo && (
+                        <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
+                          <path d="M1 3l2 2 4-4" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      )}
+                    </span>
+                    <span className="flex-1 min-w-0">
+                      <span
+                        className="block text-sm font-medium"
+                        style={{ color: ativo ? flag.cor : 'var(--acs-ink)' }}
+                      >
+                        {flag.label}
+                        {flag.urgente && (
+                          <span className="ml-1.5 font-mono text-[9px] uppercase tracking-[.1em] opacity-70">
+                            urgente
+                          </span>
+                        )}
+                      </span>
+                      <span className="text-xs text-acs-ink-3">{flag.descricao}</span>
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
           </div>
 
           {/* Observação */}
