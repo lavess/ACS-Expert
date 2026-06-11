@@ -48,6 +48,8 @@ import {
   RegistrarDesfechoSheet,
   EncaminhamentoVencidoBadge,
 } from '@/features/encaminhamentos';
+import { RegistrarVisitaSheet } from '@/features/visitas/RegistrarVisitaSheet';
+import { HistoricoVisitas } from '@/features/visitas/HistoricoVisitas';
 import type { Comorbidade } from '@/types';
 
 const COMORBIDADE_LABEL: Record<Comorbidade, string> = {
@@ -138,8 +140,10 @@ export function PerfilPaciente() {
 
   const [triagens, setTriagens] = useState<TriagemResumo[]>([]);
   const [encaminhamentos, setEncaminhamentos] = useState<EncaminhamentoAPI[]>([]);
-  const [sheetEncOpen, setSheetEncOpen] = useState(false);
-  const [encDesfecho, setEncDesfecho]   = useState<EncaminhamentoAPI | null>(null);
+  const [sheetEncOpen, setSheetEncOpen]   = useState(false);
+  const [encDesfecho, setEncDesfecho]     = useState<EncaminhamentoAPI | null>(null);
+  const [sheetVisitaOpen, setSheetVisitaOpen] = useState(false);
+  const [visitaRefreshKey, setVisitaRefreshKey] = useState(0);
 
   function recarregarEncaminhamentos(idNum: number) {
     return encaminhamentosService
@@ -422,6 +426,20 @@ export function PerfilPaciente() {
               )}
             </section>
 
+            {/* Visitas domiciliares */}
+            <section>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="eyebrow">Visitas Domiciliares</h3>
+                <button
+                  onClick={() => setSheetVisitaOpen(true)}
+                  className="text-xs font-semibold text-acs-azul hover:underline"
+                >
+                  Registrar +
+                </button>
+              </div>
+              <HistoricoVisitas pacienteId={paciente.id} refreshKey={visitaRefreshKey} />
+            </section>
+
             {/* Encaminhamentos */}
             <section>
               <div className="flex items-center justify-between mb-3">
@@ -583,6 +601,13 @@ export function PerfilPaciente() {
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-acs-line p-4 max-w-[800px] mx-auto lg:hidden">
           <div className="flex gap-3">
             <button
+              onClick={() => setSheetVisitaOpen(true)}
+              className="flex-1 py-3 bg-acs-azul text-white rounded-xl font-semibold hover:bg-acs-azul-700 transition-colors flex items-center justify-center gap-2"
+            >
+              <Home size={18} strokeWidth={2} />
+              Registrar Visita
+            </button>
+            <button
               onClick={() => iniciarNovaTriagem(paciente.id)}
               className="flex-1 py-3 bg-acs-coral text-white rounded-xl font-semibold hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
             >
@@ -609,6 +634,18 @@ export function PerfilPaciente() {
             </a>
           </div>
         </div>
+
+        {/* Sheet de visita */}
+        <RegistrarVisitaSheet
+          open={sheetVisitaOpen}
+          pacienteId={paciente.id}
+          pacienteNome={paciente.nome}
+          onClose={() => setSheetVisitaOpen(false)}
+          onSuccess={() => {
+            setSheetVisitaOpen(false)
+            setVisitaRefreshKey((k) => k + 1)
+          }}
+        />
 
         {/* Sheets de encaminhamento */}
         <RegistrarEncaminhamentoSheet

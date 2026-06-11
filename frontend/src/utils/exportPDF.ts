@@ -2,56 +2,104 @@ import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import type { RelatorioProducao, RelatorioEncaminhamentos } from '@/services/relatoriosService'
 
+// Converte o SVG da logo para PNG base64 via Canvas (executado no browser)
+function logoParaBase64(tamanho = 80): Promise<string> {
+  return new Promise((resolve) => {
+    const svgStr = `<svg width="${tamanho}" height="${tamanho}" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" fill="none">
+      <path d="M32 4C19.85 4 10 13.85 10 26c0 14 22 34 22 34s22-20 22-34c0-12.15-9.85-22-22-22z" stroke="#ffffff" stroke-width="3.5" fill="none"/>
+      <path d="M14 28h8l3-6 6 12 4-8h15" stroke="#E76F4A" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    </svg>`
+    const blob = new Blob([svgStr], { type: 'image/svg+xml' })
+    const url  = URL.createObjectURL(blob)
+    const img  = new Image()
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      canvas.width  = tamanho
+      canvas.height = tamanho
+      const ctx = canvas.getContext('2d')!
+      ctx.drawImage(img, 0, 0, tamanho, tamanho)
+      URL.revokeObjectURL(url)
+      resolve(canvas.toDataURL('image/png'))
+    }
+    img.onerror = () => { URL.revokeObjectURL(url); resolve('') }
+    img.src = url
+  })
+}
+
 const AZUL   = [11, 58, 111]  as [number, number, number]
 const VERDE  = [47, 158, 110] as [number, number, number]
 const VERMELHO = [200, 54, 74] as [number, number, number]
 const CINZA  = [108, 119, 136] as [number, number, number]
 const PAPEL  = [245, 241, 235] as [number, number, number]
 
-function cabecalhoPDF(doc: jsPDF, titulo: string, subtitulo: string) {
-  // Faixa azul no topo
+function cabecalhoPDF(doc: jsPDF, titulo: string, subtitulo: string, logoB64: string) {
+  const W = doc.internal.pageSize.getWidth()
+
+  // Faixa azul cobrindo toda a largura
   doc.setFillColor(...AZUL)
-  doc.rect(0, 0, 210, 28, 'F')
+  doc.rect(0, 0, W, 32, 'F')
 
+  // Logo do projeto (SVG renderizado como PNG)
+  const logoSize = 20
+  const lx = 10, ly = 6
+  if (logoB64) {
+    doc.addImage(logoB64, 'PNG', lx, ly, logoSize, logoSize)
+  }
+
+  // Nome do sistema
+  const textX = logoB64 ? lx + logoSize + 4 : lx
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(16)
+  doc.setFontSize(15)
   doc.setTextColor(255, 255, 255)
-  doc.text('ACS Expert', 14, 12)
+  doc.text('ACS Expert', textX, ly + 8)
 
   doc.setFont('helvetica', 'normal')
-  doc.setFontSize(10)
-  doc.setTextColor(200, 220, 245)
-  doc.text('Sistema de Acompanhamento Comunitário de Saúde', 14, 19)
+  doc.setFontSize(8)
+  doc.setTextColor(190, 215, 245)
+  doc.text('Sistema de Acompanhamento Comunitário de Saúde', textX, ly + 15)
 
-  // Título do relatório
+  // Título do relatório (direita)
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(13)
+  doc.setFontSize(15)
   doc.setTextColor(255, 255, 255)
-  doc.text(titulo, 210 - 14, 12, { align: 'right' })
+  doc.text(titulo, W - 10, ly + 8, { align: 'right' })
 
   doc.setFont('helvetica', 'normal')
-  doc.setFontSize(9)
-  doc.setTextColor(200, 220, 245)
-  doc.text(subtitulo, 210 - 14, 19, { align: 'right' })
+  doc.setFontSize(8)
+  doc.setTextColor(190, 215, 245)
+  doc.text(subtitulo, W - 10, ly + 15, { align: 'right' })
 
-  // Linha divisória
-  doc.setDrawColor(...AZUL)
-  doc.setLineWidth(0.3)
-  doc.line(14, 32, 196, 32)
-
-  return 36 // y inicial para o conteúdo
+  return 38
 }
 
 function rodapePDF(doc: jsPDF) {
   const pageCount = (doc as any).internal.getNumberOfPages()
+  const W = doc.internal.pageSize.getWidth()
+  const H = doc.internal.pageSize.getHeight()
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i)
+
+    // Linha separadora
+    doc.setDrawColor(...CINZA)
+    doc.setLineWidth(0.2)
+    doc.line(10, H - 12, W - 10, H - 12)
+
+    // Cruz de saúde (ícone) à esquerda do rodapé
+    const rx = 10, ry = H - 9, rs = 5
+    doc.setFillColor(...AZUL)
+    doc.roundedRect(rx, ry, rs, rs, 1, 1, 'F')
+    doc.setFillColor(255, 255, 255)
+    const cx = rx + rs / 2, cy = ry + rs / 2
+    doc.rect(cx - 0.6, cy - 1.8, 1.2, 3.6, 'F')
+    doc.rect(cx - 1.8, cy - 0.6, 3.6, 1.2, 'F')
+
+    // Texto do rodapé
     doc.setFont('helvetica', 'normal')
-    doc.setFontSize(8)
+    doc.setFontSize(7.5)
     doc.setTextColor(...CINZA)
     doc.text(
       `ACS Expert · Gerado em ${new Date().toLocaleDateString('pt-BR')} · Página ${i} de ${pageCount}`,
-      105, 290, { align: 'center' }
+      W / 2, H - 6, { align: 'center' }
     )
   }
 }
@@ -67,9 +115,10 @@ export async function exportarProducaoPDF(
   periodo: { de: string; ate: string }
 ) {
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })
+  const logoB64 = await logoParaBase64(80)
 
   const sub = `Período: ${fmtData(periodo.de)} a ${fmtData(periodo.ate)}`
-  let y = cabecalhoPDF(doc, 'Produção dos ACS', sub)
+  let y = cabecalhoPDF(doc, 'Produção dos ACS', sub, logoB64)
 
   // Cards de totais
   const totais = [
@@ -137,9 +186,10 @@ export async function exportarEncaminhamentosPDF(
   periodo: { de: string; ate: string }
 ) {
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })
+  const logoB64 = await logoParaBase64(80)
 
   const sub = `Período: ${fmtData(periodo.de)} a ${fmtData(periodo.ate)} · ${dados.total} registro${dados.total !== 1 ? 's' : ''}`
-  let y = cabecalhoPDF(doc, 'Encaminhamentos', sub)
+  let y = cabecalhoPDF(doc, 'Encaminhamentos', sub, logoB64)
 
   // Resumo por status
   const statusOrder = ['pendente', 'realizado', 'ausencia', 'cancelado']

@@ -110,7 +110,7 @@ router.get('/encaminhamentos', async (req, res) => {
     const resumo = rows.reduce((acc, r) => {
       acc[r.status] = (acc[r.status] ?? 0) + 1;
       return acc;
-    }, {} as Record<string, number>);
+    }, {});
 
     res.json({
       periodo: { de: de ?? null, ate: ate ?? null },

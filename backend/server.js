@@ -18,6 +18,7 @@ app.use('/api/pacientes',        require('./routes/pacientes'));
 app.use('/api/triagens',         require('./routes/triagens'));
 app.use('/api/encaminhamentos',  require('./routes/encaminhamentos'));
 app.use('/api/relatorios',       require('./routes/relatorios'));
+app.use('/api/visitas',          require('./routes/visitas'));
 
 // ── Auth ───────────────────────────────────────────────────────
 app.post('/api/auth/login', async (req, res) => {
