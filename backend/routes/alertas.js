@@ -6,9 +6,16 @@ const alertasService = require('../services/alertas');
 
 // Garante que a coluna encaminhamento_id existe e faz backfill retroativo
 db.query(`
-  ALTER TABLE alertas
-    ADD COLUMN IF NOT EXISTS encaminhamento_id INT NULL DEFAULT NULL
+  SELECT COUNT(*) AS cnt FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'alertas'
+    AND COLUMN_NAME = 'encaminhamento_id'
 `)
+  .then(([rows]) => {
+    if (rows[0].cnt === 0) {
+      return db.query(`ALTER TABLE alertas ADD COLUMN encaminhamento_id INT NULL DEFAULT NULL`);
+    }
+  })
   .then(() => alertasService.backfillAlertasEncaminhamentosParaGestores())
   .then(({ inseridos }) => {
     if (inseridos > 0) console.log(`[ALERTAS] backfill: ${inseridos} alerta(s) gerado(s) para gestores.`);

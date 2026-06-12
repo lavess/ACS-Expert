@@ -78,6 +78,7 @@ export interface CriarTriagemPayload {
 
 export interface TriagemResumo {
   id:                 number
+  visita_id:          number | null
   paciente_id:        number
   paciente_nome?:     string
   acs_id:             number

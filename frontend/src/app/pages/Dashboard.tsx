@@ -25,7 +25,7 @@ function iniciais(nome?: string) {
 }
 
 const PERFIL_LABEL: Record<string, string> = {
-  acs:         'Agente Comunitario de Saude',
+  acs:         'Agente Comunitário de Saúde',
   coordenador: 'Coordenador',
   gestor:      'Gestor',
 };
@@ -123,7 +123,7 @@ export function Dashboard() {
     message: p.total_encaminhamentos_vencidos && p.total_encaminhamentos_vencidos > 0
       ? 'Encaminhamento pendente'
       : p.nivel_risco === 'alto'
-      ? 'Alto risco — requer visita prioritaria'
+      ? 'Alto risco — requer visita prioritária'
       : 'Risco moderado',
     level: (p.nivel_risco === 'alto' ? 'urgent' : 'warning') as 'urgent' | 'warning',
   }));
@@ -194,9 +194,9 @@ export function Dashboard() {
               </button>
             </div>
 
-            {/* Acoes rapidas */}
+            {/* Ações rápidas */}
             <div>
-              <h3 className="font-display font-semibold text-acs-ink mb-4 text-lg">Acoes rapidas</h3>
+              <h3 className="font-display font-semibold text-acs-ink mb-4 text-lg">Ações rápidas</h3>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
                 {quickActions.map((action) => {
                   const Icon = action.icon;

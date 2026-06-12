@@ -115,7 +115,7 @@ export function TriagemResultado() {
   const navigate = useNavigate();
   const { pacienteId } = useParams();
   const {
-    paciente, tipoVisita, observacao, riskFactors,
+    paciente, visitaId, observacao, riskFactors,
     sintomas, qualifiers, resultado, setResultado,
     triagemConcluida, marcarTriagemConcluida,
   } = useTriagemStore();
@@ -177,7 +177,7 @@ export function TriagemResultado() {
         </button>
         <div className="flex items-start gap-3 bg-acs-amar-100 border border-acs-amar/20 rounded-xl p-4">
           <AlertCircle size={18} className="text-[#A3740A] flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-[#A3740A]">Triagem nao iniciada.</p>
+          <p className="text-sm text-[#A3740A]">Triagem não iniciada.</p>
         </div>
       </div>
     );
@@ -194,6 +194,7 @@ export function TriagemResultado() {
 
     const { data } = await triagensService.criar({
       paciente_id: paciente.id,
+      visita_id:   visitaId ?? undefined,
       payload: {
         faixa_etaria: paciente.faixaEtaria,
         sexo:         paciente.sexo,
@@ -288,8 +289,8 @@ export function TriagemResultado() {
 
   const prazoMap: Record<string, string> = {
     urgencia:       'Atendimento imediato',
-    encaminhar_ubs: 'Ate 48 horas',
-    acompanhamento: 'Proxima visita programada',
+    encaminhar_ubs: 'Até 48 horas',
+    acompanhamento: 'Próxima visita programada',
   };
   const prazoTexto = prazoMap[resultado.acao_recomendada] ?? '';
 
@@ -298,7 +299,7 @@ export function TriagemResultado() {
   /* ── Factors list for "por que essa prioridade" ────────── */
   const fatores: string[] = [];
   if (resultado.top_doenca) {
-    fatores.push(`Hipotese principal: ${resultado.top_doenca.nome} (${resultado.top_doenca.score}%)`);
+    fatores.push(`Hipótese principal: ${resultado.top_doenca.nome} (${resultado.top_doenca.score}%)`);
   }
   if (riskFactors.length > 0) {
     fatores.push(`Fatores de risco: ${riskFactors.join(', ')}`);
@@ -370,7 +371,7 @@ export function TriagemResultado() {
           {/* Clinical summary */}
           {resultado.top_doenca && (
             <p className="text-sm opacity-85 leading-relaxed mb-4">
-              Hipotese principal: <strong>{resultado.top_doenca.nome}</strong> com {resultado.top_doenca.score}% de compatibilidade.
+              Hipótese principal: <strong>{resultado.top_doenca.nome}</strong> com {resultado.top_doenca.score}% de compatibilidade.
               {resultado.top_doenca.descricao ? ` ${resultado.top_doenca.descricao}` : ''}
             </p>
           )}
@@ -399,9 +400,9 @@ export function TriagemResultado() {
           )}
         </div>
 
-        {/* ── Proximos passos ───────────────────────────── */}
+        {/* ── Próximos passos ───────────────────────────── */}
         <div className="space-y-3">
-          <h3 className="font-display font-semibold text-acs-ink">Proximos passos</h3>
+          <h3 className="font-display font-semibold text-acs-ink">Próximos passos</h3>
 
           {/* Primary CTA */}
           <button
@@ -426,16 +427,16 @@ export function TriagemResultado() {
             </button>
             <button className="flex flex-col items-center gap-2 py-4 bg-white rounded-2xl border border-acs-line shadow-[0_1px_2px_rgba(10,20,40,.06)] hover:border-acs-azul/30 transition-colors">
               <MessageSquare size={20} className="text-acs-azul" />
-              <span className="text-xs font-medium text-acs-ink">Orientacao verbal</span>
+              <span className="text-xs font-medium text-acs-ink">Orientação verbal</span>
             </button>
           </div>
         </div>
 
-        {/* ── Hipoteses ─────────────────────────────────── */}
+        {/* ── Hipóteses ─────────────────────────────────── */}
         <div>
-          <h3 className="font-display font-semibold text-acs-ink mb-3">Hipoteses diagnosticas</h3>
+          <h3 className="font-display font-semibold text-acs-ink mb-3">Hipóteses diagnósticas</h3>
           {topList.length === 0 ? (
-            <p className="text-sm text-acs-ink-3">Nenhuma condicao com probabilidade significativa.</p>
+            <p className="text-sm text-acs-ink-3">Nenhuma condição com probabilidade significativa.</p>
           ) : (
             <div className="space-y-3">
               {topList.map((d, i) => (
@@ -457,12 +458,12 @@ export function TriagemResultado() {
             Resumo da triagem
           </p>
           <div>
-            <ResumoLinha label="Tipo de visita" valor={tipoVisita} />
+            {visitaId && <ResumoLinha label="Visita vinculada" valor={`#${visitaId}`} />}
             <ResumoLinha label="Faixa etaria" valor={paciente.faixaEtaria} />
             <ResumoLinha label="Sintomas" valor={String(Object.keys(sintomas).length)} />
             <ResumoLinha label="Fatores de risco" valor={riskFactors.length > 0 ? riskFactors.join(', ') : 'nenhum'} />
             {observacao && (
-              <ResumoLinha label="Observacao" valor={observacao} />
+              <ResumoLinha label="Observação" valor={observacao} />
             )}
           </div>
         </div>

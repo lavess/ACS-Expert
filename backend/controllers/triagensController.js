@@ -188,6 +188,9 @@ async function criar(req, res) {
     if (!paciente_id) {
       return res.status(400).json({ message: 'paciente_id é obrigatório.' });
     }
+    if (!visita_id) {
+      return res.status(400).json({ message: 'visita_id é obrigatório. Crie uma visita antes de iniciar a triagem.' });
+    }
 
     // Carrega paciente — usado para preencher/validar sexo e faixa_etaria
     const [pacientes] = await conn.query(
@@ -335,7 +338,7 @@ async function listar(req, res) {
 
     let sql = `
       SELECT
-        t.id, t.paciente_id, t.acs_id, t.data_hora,
+        t.id, t.visita_id, t.paciente_id, t.acs_id, t.data_hora,
         t.faixa_etaria, t.sexo, t.score_final,
         t.nivel_risco, t.nivel_prioridade, t.acao_recomendada,
         t.top_doenca_id, t.top_doenca_nome, t.top_doenca_score,

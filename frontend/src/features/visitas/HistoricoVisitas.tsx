@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Home, Search, RotateCcw, AlertTriangle, Loader2, ClipboardList } from 'lucide-react'
+import { useNavigate } from 'react-router'
+import { Home, Search, RotateCcw, AlertTriangle, Loader2, ClipboardList, Activity } from 'lucide-react'
 import { visitasService, TIPO_VISITA_LABEL, VISITA_FLAGS, type VisitaAPI, type TipoVisita } from '@/services/visitasService'
 
 interface Props {
@@ -29,6 +30,7 @@ function fmtDataHora(iso: string) {
 }
 
 export function HistoricoVisitas({ pacienteId, refreshKey }: Props) {
+  const navigate  = useNavigate()
   const [visitas, setVisitas] = useState<VisitaAPI[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -82,12 +84,23 @@ export function HistoricoVisitas({ pacienteId, refreshKey }: Props) {
               {/* Card */}
               <div className="flex-1 bg-white rounded-xl border border-acs-line px-3 py-2.5 min-w-0">
                 <div className="flex items-start justify-between gap-2">
-                  <span
-                    className="font-mono text-[10px] font-semibold uppercase tracking-[.1em]"
-                    style={{ color: cor }}
-                  >
-                    {TIPO_VISITA_LABEL[v.tipo_visita]}
-                  </span>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span
+                      className="font-mono text-[10px] font-semibold uppercase tracking-[.1em]"
+                      style={{ color: cor }}
+                    >
+                      {TIPO_VISITA_LABEL[v.tipo_visita]}
+                    </span>
+                    {v.triagem_id && (
+                      <button
+                        onClick={() => navigate(`/triagem/${v.triagem_id}/detalhe`)}
+                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md font-mono text-[9px] font-semibold uppercase tracking-[.08em] bg-acs-azul-100 text-acs-azul hover:bg-acs-azul/20 transition-colors"
+                      >
+                        <Activity size={9} strokeWidth={2.5} />
+                        Triagem
+                      </button>
+                    )}
+                  </div>
                   <span className="font-mono text-[10px] text-acs-ink-3 flex-shrink-0">
                     {fmtDataHora(v.data_hora)}
                   </span>

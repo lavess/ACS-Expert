@@ -22,6 +22,7 @@ export interface TriagemSintomaSel {
 
 interface TriagemState {
   paciente:    TriagemContextoPaciente | null
+  visitaId:    number | null
   tipoVisita:  TipoVisita
   observacao:  string
   riskFactors: Comorbidade[]
@@ -36,6 +37,7 @@ interface TriagemState {
 
   // Actions
   setPaciente:            (p: TriagemContextoPaciente) => void
+  setVisitaId:            (id: number) => void
   setTipoVisita:          (t: TipoVisita) => void
   setObservacao:          (o: string) => void
   toggleRiskFactor:       (f: Comorbidade) => void
@@ -50,14 +52,15 @@ interface TriagemState {
 }
 
 const estadoInicial = {
-  paciente:        null,
-  tipoVisita:      'rotina' as TipoVisita,
-  observacao:      '',
-  riskFactors:     [] as Comorbidade[],
-  sintomas:        {} as Record<string, TriagemSintomaSel>,
-  qualifiers:      {} as Record<string, Record<string, boolean>>,
-  catalogo:        null,
-  resultado:       null,
+  paciente:         null,
+  visitaId:         null as number | null,
+  tipoVisita:       'rotina' as TipoVisita,
+  observacao:       '',
+  riskFactors:      [] as Comorbidade[],
+  sintomas:         {} as Record<string, TriagemSintomaSel>,
+  qualifiers:       {} as Record<string, Record<string, boolean>>,
+  catalogo:         null,
+  resultado:        null,
   triagemConcluida: false,
 }
 
@@ -65,6 +68,7 @@ export const useTriagemStore = create<TriagemState>()((set) => ({
   ...estadoInicial,
 
   setPaciente:   (p) => set({ paciente: p }),
+  setVisitaId:   (id) => set({ visitaId: id }),
   setTipoVisita: (t) => set({ tipoVisita: t }),
   setObservacao: (o) => set({ observacao: o }),
 

@@ -12,6 +12,7 @@ export interface VisitaAPI {
   status: 'planejada' | 'realizada' | 'cancelada' | 'remarcada'
   observacao: string | null
   flags: VisitaFlag[] | null
+  triagem_id: number | null
   created_at: string
 }
 

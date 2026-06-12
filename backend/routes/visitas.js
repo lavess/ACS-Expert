@@ -94,9 +94,11 @@ router.get('/', async (req, res) => {
     const [rows] = await db.query(`
       SELECT v.id, v.paciente_id, v.acs_id, v.data_hora,
              v.tipo_visita, v.status, v.observacao, v.flags, v.created_at,
-             u.nome AS acs_nome
+             u.nome AS acs_nome,
+             t.id AS triagem_id
         FROM visitas v
         JOIN usuarios u ON u.id = v.acs_id
+        LEFT JOIN triagens t ON t.visita_id = v.id
        WHERE v.paciente_id = ?
        ORDER BY v.data_hora DESC
        LIMIT 50

@@ -1,6 +1,5 @@
 import {
   ArrowLeft, Loader2, AlertCircle,
-  CalendarCheck, Search, Undo2, AlertTriangle,
   ArrowRight, Lock, Check,
 } from 'lucide-react';
 import { useNavigate, useParams, Navigate } from 'react-router';
@@ -8,7 +7,7 @@ import { useEffect, useState } from 'react';
 import { useTriagemStore } from '@/store/triagemStore';
 import { pacientesService, calcularIdade } from '@/services/pacientesService';
 import { triagensService, idadeParaFaixaEtaria } from '@/services/triagensService';
-import type { Comorbidade, TipoVisita } from '@/types';
+import type { Comorbidade } from '@/types';
 
 const FATORES_RISCO: { id: Comorbidade; label: string }[] = [
   { id: 'fumante',         label: 'Fumante' },
@@ -22,22 +21,15 @@ const FATORES_RISCO: { id: Comorbidade; label: string }[] = [
   { id: 'imunossuprimido', label: 'Imunossuprimido(a)' },
 ];
 
-const TIPOS_VISITA: { id: TipoVisita; label: string; desc: string; icon: typeof CalendarCheck }[] = [
-  { id: 'rotina',      label: 'Rotina',      desc: 'Visita programada',      icon: CalendarCheck },
-  { id: 'busca_ativa', label: 'Busca ativa',  desc: 'Busca de faltosos',      icon: Search },
-  { id: 'retorno',     label: 'Retorno',      desc: 'Acompanhamento',         icon: Undo2 },
-  { id: 'urgencia',    label: 'Urgencia',     desc: 'Demanda espontanea',     icon: AlertTriangle },
-];
-
 const STEPPER_LABELS = ['Contexto', 'Sintomas', 'Resultado'];
 
 export function TriagemPasso1() {
   const navigate = useNavigate();
   const { pacienteId } = useParams();
   const {
-    paciente, tipoVisita, observacao, riskFactors, catalogo,
+    paciente, visitaId, observacao, riskFactors, catalogo,
     triagemConcluida,
-    setPaciente, setTipoVisita, setObservacao,
+    setPaciente, setObservacao,
     toggleRiskFactor, setRiskFactors, setCatalogo, reset,
   } = useTriagemStore();
 
@@ -105,9 +97,13 @@ export function TriagemPasso1() {
   }, [pacienteId]);
 
   /* ── Guard: triagem concluida ────────────────────────────── */
-  // Após save bem-sucedido, qualquer remontagem desta tela (back do
-  // navegador, deep link) leva direto ao perfil do paciente.
   if (triagemConcluida && pacienteId) {
+    return <Navigate to={`/paciente/${pacienteId}`} replace />;
+  }
+
+  /* ── Guard: triagem sem visita ───────────────────────────── */
+  // Triagem só pode ser iniciada a partir de uma visita registrada.
+  if (!triagemConcluida && !loading && !visitaId && pacienteId) {
     return <Navigate to={`/paciente/${pacienteId}`} replace />;
   }
 
@@ -130,7 +126,7 @@ export function TriagemPasso1() {
         </button>
         <div className="flex items-start gap-3 bg-acs-vermelho-100 border border-acs-vermelho/20 rounded-xl p-4">
           <AlertCircle size={18} className="text-acs-vermelho flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-acs-vermelho">{erro ?? 'Paciente nao encontrado.'}</p>
+          <p className="text-sm text-acs-vermelho">{erro ?? 'Paciente não encontrado.'}</p>
         </div>
       </div>
     );
@@ -236,67 +232,9 @@ export function TriagemPasso1() {
           </div>
         </div>
 
-        {/* ── Section 01: Tipo de visita ───────────────────── */}
+        {/* ── Section 01: Fatores de risco ─────────────────── */}
         <div>
           <p className="eyebrow mb-1">01</p>
-          <h3 className="font-display text-[17px] font-bold text-acs-ink leading-tight">
-            Tipo de visita
-          </h3>
-          <p className="text-[12px] text-acs-ink-3 mb-3">
-            Selecione o contexto desta visita domiciliar.
-          </p>
-
-          <div className="grid grid-cols-2 gap-2.5">
-            {TIPOS_VISITA.map((t) => {
-              const ativo = tipoVisita === t.id;
-              const isUrgencia = t.id === 'urgencia';
-              const Icon = t.icon;
-
-              return (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => setTipoVisita(t.id)}
-                  className={`flex items-start gap-3 p-3.5 rounded-2xl text-left transition-all ${
-                    ativo
-                      ? isUrgencia
-                        ? 'bg-acs-coral-100 border-2 border-acs-coral'
-                        : 'bg-acs-azul-050 border-2 border-acs-azul'
-                      : 'bg-white border border-acs-line'
-                  }`}
-                >
-                  <div
-                    className={`w-[30px] h-[30px] rounded-lg flex items-center justify-center shrink-0 ${
-                      ativo
-                        ? isUrgencia
-                          ? 'bg-acs-coral text-white'
-                          : 'bg-acs-azul text-white'
-                        : 'bg-acs-paper-2 text-acs-ink-3'
-                    }`}
-                  >
-                    <Icon size={16} strokeWidth={2} />
-                  </div>
-                  <div className="min-w-0">
-                    <p
-                      className={`text-[14px] font-bold leading-tight ${
-                        ativo
-                          ? isUrgencia ? 'text-acs-coral' : 'text-acs-azul'
-                          : 'text-acs-ink'
-                      }`}
-                    >
-                      {t.label}
-                    </p>
-                    <p className="text-[11px] text-acs-ink-3 mt-0.5 leading-snug">{t.desc}</p>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* ── Section 02: Fatores de risco ─────────────────── */}
-        <div>
-          <p className="eyebrow mb-1">02</p>
           <h3 className="font-display text-[17px] font-bold text-acs-ink leading-tight">
             Fatores de risco
           </h3>
@@ -350,20 +288,20 @@ export function TriagemPasso1() {
           </div>
         </div>
 
-        {/* ── Section 03: Anotacoes ────────────────────────── */}
+        {/* ── Section 02: Anotações ────────────────────────── */}
         <div>
-          <p className="eyebrow mb-1">03</p>
+          <p className="eyebrow mb-1">02</p>
           <h3 className="font-display text-[17px] font-bold text-acs-ink leading-tight">
-            Anotacoes
+            Anotações
           </h3>
           <p className="text-[12px] text-acs-ink-3 mb-3">
-            Observacoes livres sobre a visita.
+            Observações livres sobre a visita.
           </p>
 
           <textarea
             value={observacao}
             onChange={(e) => setObservacao(e.target.value)}
-            placeholder="Observacoes sobre a visita..."
+            placeholder="Observações sobre a visita..."
             className="w-full px-4 py-3 rounded-xl border border-acs-line bg-white text-acs-ink placeholder:text-acs-ink-4 focus:outline-none focus:ring-2 focus:ring-acs-azul/40 focus:border-acs-azul resize-none text-[14px]"
             rows={4}
           />
@@ -382,7 +320,7 @@ export function TriagemPasso1() {
           onClick={() => navigate(`/triagem/${paciente.id}/passo2`)}
           className="flex-1 flex items-center justify-center gap-2 py-3 bg-acs-azul text-white rounded-xl font-semibold text-[14px] hover:bg-acs-azul-900 transition-colors"
         >
-          Proximo: sintomas
+          Próximo: sintomas
           <ArrowRight size={16} strokeWidth={2.2} />
         </button>
       </div>

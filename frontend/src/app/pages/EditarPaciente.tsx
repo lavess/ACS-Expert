@@ -22,17 +22,17 @@ const COMORBIDADES: { id: Comorbidade; label: string }[] = [
 ];
 
 const STEPS = [
-  { title: 'Identificacao', label: 'Identificacao', desc: 'Dados pessoais do paciente', icon: User },
-  { title: 'Endereco', label: 'Endereco', desc: 'Endereco e localizacao', icon: Home },
-  { title: 'Contexto social', label: 'Contexto social', desc: 'Situacao social e vulnerabilidades', icon: Heart },
-  { title: 'Saude', label: 'Saude', desc: 'Comorbidades e condicoes de saude', icon: Stethoscope },
+  { title: 'Identificação', label: 'Identificação', desc: 'Dados pessoais do paciente', icon: User },
+  { title: 'Endereço', label: 'Endereço', desc: 'Endereço e localização', icon: Home },
+  { title: 'Contexto social', label: 'Contexto social', desc: 'Situação social e vulnerabilidades', icon: Heart },
+  { title: 'Saúde', label: 'Saúde', desc: 'Comorbidades e condições de saúde', icon: Stethoscope },
 ];
 
 const SOCIAL_FLAGS = [
-  { key: 'idosoMoraSozinho',      title: 'Idoso que mora sozinho',               desc: 'Paciente idoso sem companhia no domicilio' },
-  { key: 'vulnerabilidadeSocial',  title: 'Vulnerabilidade social',               desc: 'Familia em situacao de vulnerabilidade' },
-  { key: 'dificuldadeLocomocao',   title: 'Dificuldade de locomocao',             desc: 'Mobilidade reduzida ou acamado' },
-  { key: 'beneficioSocial',        title: 'Beneficiario de programa social',      desc: 'Bolsa Familia, BPC ou similar' },
+  { key: 'idosoMoraSozinho',      title: 'Idoso que mora sozinho',               desc: 'Paciente idoso sem companhia no domicílio' },
+  { key: 'vulnerabilidadeSocial',  title: 'Vulnerabilidade social',               desc: 'Família em situação de vulnerabilidade' },
+  { key: 'dificuldadeLocomocao',   title: 'Dificuldade de locomoção',             desc: 'Mobilidade reduzida ou acamado' },
+  { key: 'beneficioSocial',        title: 'Beneficiário de programa social',      desc: 'Bolsa Família, BPC ou similar' },
 ] as const;
 
 const INPUT_CLS = 'w-full bg-white border border-acs-line rounded-[10px] px-4 py-3 text-[15px] text-acs-ink placeholder:text-acs-ink-4 focus:outline-none focus:ring-2 focus:ring-acs-azul-050 focus:border-acs-azul-300 transition-colors';
@@ -360,7 +360,7 @@ export function EditarPaciente() {
       case 0:
         return (
           <div>
-            <FormSectionHeader icon={User} title="Identificacao" desc="Informacoes basicas do paciente" />
+            <FormSectionHeader icon={User} title="Identificação" desc="Informações básicas do paciente" />
             <div className="space-y-4">
               <FormField label="Nome completo" required>
                 <input type="text" value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Digite o nome completo" className={INPUT_CLS} />
@@ -370,7 +370,7 @@ export function EditarPaciente() {
                 <FormField label="CPF" hint="Opcional">
                   <input type="text" value={cpf} onChange={(e) => setCpf(e.target.value)} placeholder="000.000.000-00" className={INPUT_CLS} />
                 </FormField>
-                <FormField label="CNS" hint="Cartao Nacional de Saude">
+                <FormField label="CNS" hint="Cartão Nacional de Saúde">
                   <input type="text" value={cns} onChange={(e) => setCns(e.target.value)} placeholder="000 0000 0000 0000" className={INPUT_CLS} />
                 </FormField>
               </div>
@@ -405,14 +405,14 @@ export function EditarPaciente() {
       case 1:
         return (
           <div>
-            <FormSectionHeader icon={Home} title="Endereco" desc="Localizacao e referencia do domicilio" />
+            <FormSectionHeader icon={Home} title="Endereço" desc="Localização e referência do domicílio" />
             <div className="space-y-4">
               <FormField label="Logradouro">
                 <input type="text" value={logradouro} onChange={(e) => setLogradouro(e.target.value)} placeholder="Ex: Rua das Flores" className={INPUT_CLS} />
               </FormField>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <FormField label="Numero">
+                <FormField label="Número">
                   <input type="text" value={numero} onChange={(e) => setNumero(e.target.value)} placeholder="123" className={INPUT_CLS} />
                 </FormField>
                 <FormField label="Complemento">
@@ -438,8 +438,8 @@ export function EditarPaciente() {
                 </select>
               </FormField>
 
-              <FormField label="Referencia de localizacao">
-                <textarea value={nomeReferencia} onChange={(e) => setNomeReferencia(e.target.value)} placeholder="Ex: Proximo ao mercado, casa azul..." className={`${INPUT_CLS} resize-none`} rows={3} />
+              <FormField label="Referência de localização">
+                <textarea value={nomeReferencia} onChange={(e) => setNomeReferencia(e.target.value)} placeholder="Ex: Próximo ao mercado, casa azul..." className={`${INPUT_CLS} resize-none`} rows={3} />
               </FormField>
             </div>
           </div>
@@ -448,7 +448,7 @@ export function EditarPaciente() {
       case 2:
         return (
           <div>
-            <FormSectionHeader icon={Heart} title="Contexto social" desc="Informacoes sobre vulnerabilidades e condicoes sociais" />
+            <FormSectionHeader icon={Heart} title="Contexto social" desc="Informações sobre vulnerabilidades e condições sociais" />
             <div className="space-y-3">
               {SOCIAL_FLAGS.map((flag) => (
                 <div key={flag.key} className="flex items-center gap-3 bg-white rounded-xl border border-acs-line p-4">
@@ -469,7 +469,7 @@ export function EditarPaciente() {
       case 3:
         return (
           <div>
-            <FormSectionHeader icon={Stethoscope} title="Saude" desc="Selecione as comorbidades do paciente" />
+            <FormSectionHeader icon={Stethoscope} title="Saúde" desc="Selecione as comorbidades do paciente" />
             <div className="flex flex-wrap gap-2">
               {COMORBIDADES.map((c) => {
                 const sel = comorbidadesSel.has(c.id);
@@ -594,7 +594,7 @@ export function EditarPaciente() {
                 onClick={() => setStep(step + 1)}
                 className="inline-flex items-center gap-2 px-6 py-3 bg-acs-azul text-white rounded-xl text-[14px] font-semibold hover:bg-acs-azul-700 transition-colors"
               >
-                Proximo
+                Próximo
                 <ArrowRight size={16} strokeWidth={2} />
               </button>
             ) : (
@@ -605,7 +605,7 @@ export function EditarPaciente() {
                 className="inline-flex items-center gap-2 px-6 py-3 bg-acs-azul text-white rounded-xl text-[14px] font-semibold hover:bg-acs-azul-700 transition-colors disabled:opacity-70"
               >
                 {salvando && <Loader2 size={16} className="animate-spin" />}
-                {salvando ? 'Salvando...' : 'Salvar alteracoes'}
+                {salvando ? 'Salvando...' : 'Salvar alterações'}
               </button>
             )}
           </div>

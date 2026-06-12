@@ -142,7 +142,7 @@ export function DetalheTriagem() {
         </button>
         <div className="flex items-start gap-3 bg-acs-vermelho-100 border border-acs-vermelho/20 rounded-xl p-4">
           <AlertCircle size={18} className="text-acs-vermelho flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-acs-vermelho">{erro ?? 'Triagem nao encontrada.'}</p>
+          <p className="text-sm text-acs-vermelho">{erro ?? 'Triagem não encontrada.'}</p>
         </div>
       </div>
     );
@@ -209,7 +209,7 @@ export function DetalheTriagem() {
 
           {triagem.top_doenca_nome && (
             <p className="text-sm opacity-90 mb-4">
-              Hipotese principal: <strong>{triagem.top_doenca_nome}</strong>
+              Hipótese principal: <strong>{triagem.top_doenca_nome}</strong>
               {triagem.top_doenca_score != null && (
                 <span className="font-mono text-xs ml-1 opacity-75">({triagem.top_doenca_score}%)</span>
               )}
@@ -231,7 +231,7 @@ export function DetalheTriagem() {
                 <li>Score final: {triagem.score_final}%</li>
                 <li>Nivel de risco: {triagem.nivel_risco}</li>
                 <li>{triagem.sintomas.length} sintoma(s) registrado(s)</li>
-                {triagem.top_doenca_nome && <li>Hipotese: {triagem.top_doenca_nome} ({triagem.top_doenca_score}%)</li>}
+                {triagem.top_doenca_nome && <li>Hipótese: {triagem.top_doenca_nome} ({triagem.top_doenca_score}%)</li>}
               </ul>
             </div>
           )}
@@ -336,13 +336,13 @@ export function DetalheTriagem() {
           )}
         </section>
 
-        {/* ── Hipoteses diagnosticas ────────────────────────── */}
+        {/* ── Hipóteses diagnósticas ────────────────────────── */}
         {triagem.resultados.length > 0 && (
           <section>
             <div className="flex items-center gap-2 mb-3">
               <Activity size={16} className="text-acs-azul" strokeWidth={2} />
               <h3 className="font-display font-bold text-acs-ink text-[15px]">
-                Hipoteses diagnosticas
+                Hipóteses diagnósticas
                 <span className="ml-2 text-xs font-mono text-acs-ink-3 font-semibold">{triagem.resultados.length}</span>
               </h3>
             </div>
@@ -422,13 +422,13 @@ export function DetalheTriagem() {
           <ResumoLinha label="Sintomas" value={`${triagem.sintomas.length} registrados`} />
           <ResumoLinha label="Score final" value={`${triagem.score_final}%`} />
           <ResumoLinha label="Risco" value={triagem.nivel_risco} />
-          <ResumoLinha label="Acao" value={labelAcao(triagem.acao_recomendada)} />
-          <ResumoLinha label="Faixa etaria" value={triagem.faixa_etaria} />
+          <ResumoLinha label="Ação" value={labelAcao(triagem.acao_recomendada)} />
+          <ResumoLinha label="Faixa etária" value={triagem.faixa_etaria} />
         </div>
 
-        {/* ── Proximos passos ───────────────────────────────── */}
+        {/* ── Próximos passos ───────────────────────────────── */}
         <div>
-          <p className="eyebrow mb-3">Acoes</p>
+          <p className="eyebrow mb-3">Ações</p>
           <div className="flex flex-col gap-2">
             <button
               onClick={() => {

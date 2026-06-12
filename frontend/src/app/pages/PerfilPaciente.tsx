@@ -20,7 +20,6 @@ import {
   ShieldAlert,
   Accessibility,
   HandCoins,
-  Activity,
 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router';
 import { RiskBadge } from '../components/RiskBadge';
@@ -37,7 +36,6 @@ import {
   corPrioridade,
   type TriagemResumo,
 } from '@/services/triagensService';
-import { useTriagemStore } from '@/store/triagemStore';
 import {
   encaminhamentosService,
   TIPO_ENCAMINHAMENTO_LABEL,
@@ -127,13 +125,6 @@ export function PerfilPaciente() {
   const navigate = useNavigate();
   const { id } = useParams();
 
-  // Inicia uma nova triagem: limpa qualquer estado residual (incluindo
-  // a flag `triagemConcluida` deixada por um save anterior) antes de
-  // entrar no passo 1. Sem isso o wizard redireciona de volta para cá.
-  const iniciarNovaTriagem = (pacienteId: number) => {
-    useTriagemStore.getState().reset();
-    navigate(`/triagem/${pacienteId}/passo1`);
-  };
   const [paciente, setPaciente] = useState<PacienteDetalhe | null>(null);
   const [loading, setLoading]   = useState(true);
   const [erro, setErro]         = useState<string | null>(null);
@@ -194,7 +185,7 @@ export function PerfilPaciente() {
         </button>
         <div className="flex items-start gap-3 bg-acs-vermelho-100 border border-acs-vermelho rounded-xl p-4">
           <AlertCircle size={18} className="text-acs-vermelho flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-acs-vermelho">{erro ?? 'Paciente nao encontrado.'}</p>
+          <p className="text-sm text-acs-vermelho">{erro ?? 'Paciente não encontrado.'}</p>
         </div>
       </div>
     );
@@ -212,8 +203,8 @@ export function PerfilPaciente() {
   const bandeirasSociais: { label: string; icon: React.ElementType; variant: 'coral' | 'amar' | 'azul' }[] = [
     ...(paciente.idoso_mora_sozinho     ? [{ label: 'Idoso mora sozinho',      icon: ShieldAlert,   variant: 'coral' as const }] : []),
     ...(paciente.vulnerabilidade_social ? [{ label: 'Vulnerabilidade social',  icon: Heart,         variant: 'coral' as const }] : []),
-    ...(paciente.dificuldade_locomocao  ? [{ label: 'Dificuldade de locomocao', icon: Accessibility, variant: 'amar' as const }] : []),
-    ...(paciente.beneficio_social       ? [{ label: 'Beneficio social',        icon: HandCoins,     variant: 'azul' as const }] : []),
+    ...(paciente.dificuldade_locomocao  ? [{ label: 'Dificuldade de locomoção', icon: Accessibility, variant: 'amar' as const }] : []),
+    ...(paciente.beneficio_social       ? [{ label: 'Benefício social',        icon: HandCoins,     variant: 'azul' as const }] : []),
   ];
 
   const irParaEditar = () => {
@@ -261,10 +252,10 @@ export function PerfilPaciente() {
                 <Pencil size={15} strokeWidth={1.8} /> Editar
               </button>
               <button
-                onClick={() => iniciarNovaTriagem(paciente.id)}
+                onClick={() => setSheetVisitaOpen(true)}
                 className="flex items-center gap-1.5 px-5 py-2 rounded-xl bg-acs-coral text-white text-sm font-semibold hover:opacity-90 transition-opacity"
               >
-                <Activity size={15} strokeWidth={2} /> Nova triagem
+                <Home size={15} strokeWidth={2} /> Registrar visita
               </button>
             </div>
           </div>
@@ -337,7 +328,7 @@ export function PerfilPaciente() {
             {/* Historico de Triagens */}
             <section>
               <div className="flex items-center justify-between mb-3">
-                <h3 className="eyebrow">Historico de triagens</h3>
+                <h3 className="eyebrow">Histórico de triagens</h3>
                 {triagens.length > 0 && (
                   <span className="eyebrow">{triagens.length} registro(s)</span>
                 )}
@@ -348,13 +339,13 @@ export function PerfilPaciente() {
                   <ClipboardList size={28} className="text-acs-ink-4 mx-auto mb-2" strokeWidth={1.8} />
                   <p className="text-sm text-acs-ink-3 mb-1">Nenhuma triagem registrada</p>
                   <p className="text-xs text-acs-ink-4 mb-4">
-                    As triagens realizadas com este paciente aparecerao aqui.
+                    As triagens realizadas com este paciente aparecerão aqui.
                   </p>
                   <button
-                    onClick={() => iniciarNovaTriagem(paciente.id)}
+                    onClick={() => setSheetVisitaOpen(true)}
                     className="text-sm text-acs-coral font-semibold hover:underline"
                   >
-                    Iniciar primeira triagem &rarr;
+                    Registrar uma visita para iniciar &rarr;
                   </button>
                 </div>
               ) : (
@@ -398,7 +389,7 @@ export function PerfilPaciente() {
 
                             {triagem.top_doenca_nome && (
                               <p className="text-sm text-acs-ink-2 mb-2">
-                                <span className="font-semibold text-acs-ink">Hipotese:</span> {triagem.top_doenca_nome}
+                                <span className="font-semibold text-acs-ink">Hipótese:</span> {triagem.top_doenca_nome}
                                 {triagem.top_doenca_score != null && (
                                   <span className="font-mono text-xs text-acs-ink-3 ml-1">({triagem.top_doenca_score}%)</span>
                                 )}
@@ -406,13 +397,20 @@ export function PerfilPaciente() {
                             )}
 
                             <p className="text-sm text-acs-ink-2 mb-3">
-                              <span className="font-semibold text-acs-ink">Acao:</span> {labelAcao(triagem.acao_recomendada)}
+                              <span className="font-semibold text-acs-ink">Ação:</span> {labelAcao(triagem.acao_recomendada)}
                             </p>
 
                             <div className="flex items-center justify-between">
-                              <span className="eyebrow">
-                                {labelPrioridade(triagem.nivel_prioridade)}
-                              </span>
+                              <div className="flex items-center gap-2">
+                                <span className="eyebrow">
+                                  {labelPrioridade(triagem.nivel_prioridade)}
+                                </span>
+                                {triagem.visita_id && (
+                                  <span className="font-mono text-[9px] text-acs-ink-3 bg-acs-paper px-1.5 py-0.5 rounded">
+                                    Visita #{triagem.visita_id}
+                                  </span>
+                                )}
+                              </div>
                               <span className="text-xs text-acs-azul font-semibold group-hover:underline flex items-center gap-1">
                                 Ver detalhe <ChevronRight size={12} />
                               </span>
@@ -429,7 +427,7 @@ export function PerfilPaciente() {
             {/* Visitas domiciliares */}
             <section>
               <div className="flex items-center justify-between mb-3">
-                <h3 className="eyebrow">Visitas Domiciliares</h3>
+                <h3 className="eyebrow">Visitas domiciliares</h3>
                 <button
                   onClick={() => setSheetVisitaOpen(true)}
                   className="text-xs font-semibold text-acs-azul hover:underline"
@@ -527,17 +525,17 @@ export function PerfilPaciente() {
 
             {/* Identificacao */}
             <div className="bg-white rounded-2xl p-4 border border-acs-line" style={{ boxShadow: '0 1px 2px rgba(10,20,40,.06)' }}>
-              <p className="eyebrow mb-3">Identificacao</p>
+              <p className="eyebrow mb-3">{'Identifica\u00e7\u00e3o'}</p>
               <DataRow icon={CreditCard} label="CNS" value={formatarCNS(paciente.cns)} />
-              <DataRow icon={Map} label="Microarea" value={paciente.microarea_nome ?? '\u2014'} />
-              <DataRow icon={UserCheck} label="ACS Responsavel" value={paciente.acs_nome ?? 'Nao atribuido'} />
+              <DataRow icon={Map} label={'Micro\u00e1rea'} value={paciente.microarea_nome ?? '\u2014'} />
+              <DataRow icon={UserCheck} label={'ACS Respons\u00e1vel'} value={paciente.acs_nome ?? 'N\u00e3o atribu\u00eddo'} />
             </div>
 
             {/* Endereco */}
             {(endereco || paciente.bairro || paciente.cep || paciente.nome_referencia) && (
               <div className="bg-white rounded-2xl p-4 border border-acs-line" style={{ boxShadow: '0 1px 2px rgba(10,20,40,.06)' }}>
                 <div className="flex items-center justify-between mb-3">
-                  <p className="eyebrow">Endereco</p>
+                  <p className="eyebrow">Endereço</p>
                   {paciente.dom_latitude && paciente.dom_longitude && (
                     <a
                       href={`https://www.google.com/maps/dir/?api=1&destination=${paciente.dom_latitude},${paciente.dom_longitude}`}
@@ -607,13 +605,6 @@ export function PerfilPaciente() {
               <Home size={18} strokeWidth={2} />
               Registrar Visita
             </button>
-            <button
-              onClick={() => iniciarNovaTriagem(paciente.id)}
-              className="flex-1 py-3 bg-acs-coral text-white rounded-xl font-semibold hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
-            >
-              <Activity size={18} strokeWidth={2} />
-              Nova Triagem
-            </button>
             {paciente.dom_latitude && paciente.dom_longitude && (
               <a
                 href={`https://www.google.com/maps/dir/?api=1&destination=${paciente.dom_latitude},${paciente.dom_longitude}`}
@@ -641,10 +632,7 @@ export function PerfilPaciente() {
           pacienteId={paciente.id}
           pacienteNome={paciente.nome}
           onClose={() => setSheetVisitaOpen(false)}
-          onSuccess={() => {
-            setSheetVisitaOpen(false)
-            setVisitaRefreshKey((k) => k + 1)
-          }}
+          onSuccess={() => setVisitaRefreshKey((k) => k + 1)}
         />
 
         {/* Sheets de encaminhamento */}

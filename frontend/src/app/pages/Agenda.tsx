@@ -25,7 +25,7 @@ async function pacienteParaVisita(p: PacienteListagem, ordem: number): Promise<V
 
   const enderecoParts = [p.logradouro, p.numero].filter(Boolean);
   const bairroPart = p.bairro ? ` — ${p.bairro}` : '';
-  const endereco = enderecoParts.length > 0 ? enderecoParts.join(', ') + bairroPart : 'Endereco nao informado';
+  const endereco = enderecoParts.length > 0 ? enderecoParts.join(', ') + bairroPart : 'Endereço não informado';
 
   const coords = await geocodeCep(p.cep ?? '');
 
@@ -272,7 +272,7 @@ export function Agenda() {
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-5 h-5 rounded-full bg-acs-amar flex items-center justify-center text-white text-xs font-bold border-2 border-white shadow">2</div>
-                <span className="text-xs text-acs-ink-3">Atencao</span>
+                <span className="text-xs text-acs-ink-3">Atenção</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-5 h-5 rounded-full bg-acs-verde flex items-center justify-center text-white text-xs font-bold border-2 border-white shadow">3</div>

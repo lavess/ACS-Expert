@@ -146,6 +146,7 @@ CREATE TABLE IF NOT EXISTS visitas (
   tipo_visita    ENUM('rotina','busca_ativa','retorno','urgencia') DEFAULT 'rotina',
   status         ENUM('planejada','realizada','cancelada','remarcada') DEFAULT 'planejada',
   observacao     TEXT,
+  flags          JSON,
   offline_uuid   CHAR(36),
   synced_at      DATETIME,
   created_at     DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -274,7 +275,8 @@ CREATE TABLE IF NOT EXISTS alertas (
     'cronico_sem_acompanhamento',
     'gestante_sem_prenatal',
     'vacina_atrasada',
-    'familia_multiplo_risco'
+    'familia_multiplo_risco',
+    'novo_encaminhamento'
   ) NOT NULL,
   urgencia       ENUM('informativo','atencao','urgente') DEFAULT 'atencao',
   titulo         VARCHAR(200) NOT NULL,

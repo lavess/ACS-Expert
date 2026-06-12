@@ -14,39 +14,39 @@ import type { SintomaCatalogo } from '@/services/triagensService';
 
 const GROUP_ORDER = [
   'Sintomas Gerais',
-  'Saude Mental',
-  'Neurologico e Cabeca',
-  'Visao e Olhos',
+  'Saúde Mental',
+  'Neurológico e Cabeça',
+  'Visão e Olhos',
   'Ouvido, Nariz e Garganta (Otorrino)',
   'Cardiovascular',
-  'Respiratorio',
+  'Respiratório',
   'Digestivo e Abdominal',
-  'Urinario e Renal',
+  'Urinário e Renal',
   'Genital e Reprodutivo',
-  'Musculos e Articulacoes',
+  'Músculos e Articulações',
   'Pele e Cabelos',
 ];
 
 const GROUP_ICONS: Record<string, React.ElementType> = {
   'Sintomas Gerais':                       Thermometer,
-  'Saude Mental':                          Brain,
-  'Neurologico e Cabeca':                  HeadsetIcon,
-  'Visao e Olhos':                         Eye,
+  'Saúde Mental':                          Brain,
+  'Neurológico e Cabeça':                  HeadsetIcon,
+  'Visão e Olhos':                         Eye,
   'Ouvido, Nariz e Garganta (Otorrino)':   Ear,
   'Cardiovascular':                        HeartPulse,
-  'Respiratorio':                          Wind,
+  'Respiratório':                          Wind,
   'Digestivo e Abdominal':                 Salad,
-  'Urinario e Renal':                      Droplets,
+  'Urinário e Renal':                      Droplets,
   'Genital e Reprodutivo':                 Baby,
-  'Musculos e Articulacoes':               Bone,
+  'Músculos e Articulações':               Bone,
   'Pele e Cabelos':                        Sparkles,
 };
 
 const INTENSITY_LEVELS = [
   { key: 'leve',     level: 3,  label: 'Leve',     hint: 'Incomoda, mas segue a rotina',    color: 'var(--acs-verde)' },
-  { key: 'moderado', level: 6,  label: 'Moderado', hint: 'Atrapalha atividades diarias',    color: 'var(--acs-amar)' },
+  { key: 'moderado', level: 6,  label: 'Moderado', hint: 'Atrapalha atividades diárias',    color: 'var(--acs-amar)' },
   { key: 'forte',    level: 8,  label: 'Forte',    hint: 'Impede tarefas do dia a dia',     color: 'var(--acs-coral)' },
-  { key: 'severo',   level: 10, label: 'Severo',   hint: 'Sintoma insuportavel',            color: 'var(--acs-vermelho)' },
+  { key: 'severo',   level: 10, label: 'Severo',   hint: 'Sintoma insuportável',            color: 'var(--acs-vermelho)' },
 ];
 
 /* ── Helpers ───────────────────────────────────────────────── */
@@ -162,7 +162,7 @@ export function TriagemPasso2() {
         <div className="flex items-start gap-3 bg-acs-amar-100 border border-acs-amar/20 rounded-xl p-4">
           <AlertCircle size={18} className="text-[#A3740A] flex-shrink-0 mt-0.5" />
           <p className="text-sm text-[#A3740A]">
-            Triagem nao iniciada. Volte e inicie pelo passo 1.
+            Triagem não iniciada. Volte e inicie pelo passo 1.
           </p>
         </div>
       </div>
