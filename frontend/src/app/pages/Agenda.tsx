@@ -4,8 +4,9 @@ import {
   CheckCircle2, Clock,
 } from 'lucide-react';
 import { useNavigate } from 'react-router';
-import { MapaVisitas } from '../components/MapaVisitas';
+import { MapaVisitas, type Visita } from '../components/MapaVisitas';
 import { RiskBadge } from '../components/RiskBadge';
+import { geocodeCep, JOINVILLE_CENTER } from '@/hooks/useGeocodeCep';
 import {
   agendaService,
   corPrioridadePorRisco,
@@ -85,19 +86,52 @@ export function Agenda() {
     urgentes:   itens.filter((i) => i.paciente_nivel_risco === 'alto').length,
   }), [itens]);
 
-  const visitasParaMapa = useMemo(() => itens.map((i) => ({
-    id:         i.id,
-    ordem:      i.ordem_prioridade,
-    prioridade: corPrioridadePorRisco(i.paciente_nivel_risco),
-    paciente:   i.paciente_nome ?? `Paciente #${i.paciente_id}`,
-    endereco:   enderecoCurto(i),
-    distancia:  i.microarea_nome ? `MA ${i.microarea_nome}` : '—',
-    razao:      i.motivo_prioridade?.motivos?.[0] ?? 'Visita programada',
-    status:     i.status === 'realizada' ? 'realizada' : 'pendente',
-    lat:        Number(i.latitude  ?? -26.3044),
-    lng:        Number(i.longitude ?? -48.8487),
-    distanciaMetros: 0,
-  })), [itens]);
+  // Coordenadas dos marcadores do mapa. Usa lat/lng do domicílio quando
+  // existirem; caso contrário geocodifica pelo CEP (com fallback espalhado
+  // em Joinville) para que os pontos não fiquem todos empilhados.
+  const [visitasParaMapa, setVisitasParaMapa] = useState<Visita[]>([]);
+
+  useEffect(() => {
+    let ativo = true;
+
+    async function montarPontos() {
+      const pontos = await Promise.all(
+        itens.map(async (i): Promise<Visita> => {
+          const temCoords =
+            i.latitude != null && i.longitude != null &&
+            Number.isFinite(Number(i.latitude)) && Number.isFinite(Number(i.longitude));
+
+          const coords = temCoords
+            ? { lat: Number(i.latitude), lng: Number(i.longitude) }
+            : i.cep
+              ? await geocodeCep(i.cep)
+              : {
+                  lat: JOINVILLE_CENTER.lat + (Math.random() - 0.5) * 0.06,
+                  lng: JOINVILLE_CENTER.lng + (Math.random() - 0.5) * 0.06,
+                };
+
+          return {
+            id:         i.id,
+            ordem:      i.ordem_prioridade,
+            prioridade: corPrioridadePorRisco(i.paciente_nivel_risco),
+            paciente:   i.paciente_nome ?? `Paciente #${i.paciente_id}`,
+            endereco:   enderecoCurto(i),
+            distancia:  i.microarea_nome ? `MA ${i.microarea_nome}` : '—',
+            razao:      i.motivo_prioridade?.motivos?.[0] ?? 'Visita programada',
+            status:     i.status === 'realizada' ? 'realizada' : 'pendente',
+            lat:        coords.lat,
+            lng:        coords.lng,
+            distanciaMetros: 0,
+          };
+        })
+      );
+
+      if (ativo) setVisitasParaMapa(pontos);
+    }
+
+    montarPontos();
+    return () => { ativo = false; };
+  }, [itens]);
 
   return (
     <div className="h-full flex flex-col pb-16 overflow-y-auto">
