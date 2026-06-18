@@ -1,0 +1,35 @@
+// ACS Expert — brand tokens (mirrors the identity deck)
+window.ACS = {
+  azul:       '#0B3A6F',
+  azul900:    '#081F3D',
+  azul700:    '#104C8F',
+  azul300:    '#6FA3D6',
+  azul100:    '#D6E4F2',
+  azul050:    '#ECF2F9',
+  verde:      '#2F9E6E',
+  verde300:   '#8FD1B3',
+  verde100:   '#D9EFE5',
+  coral:      '#E76F4A',
+  coral300:   '#F4B39E',
+  coral100:   '#FCE5DC',
+  amar:       '#F2B134',
+  amar100:    '#FCEDCE',
+  vermelho:   '#C8364A',
+  vermelho100:'#F7DBDF',
+  paper:      '#F5F1EB',
+  paper2:     '#EDE6DA',
+  paperDark:  '#E4DBCA',
+  ink:        '#0E1726',
+  ink2:       '#3A4656',
+  ink3:       '#6C7788',
+  ink4:       '#98A1AE',
+  line:       '#1c2a3d14',
+  lineStrong: '#1c2a3d28',
+  white:      '#ffffff',
+};
+
+window.FONTS = {
+  display: "'Sora', system-ui, sans-serif",
+  ui:      "'Inter', -apple-system, system-ui, sans-serif",
+  mono:    "'JetBrains Mono', ui-monospace, monospace",
+};

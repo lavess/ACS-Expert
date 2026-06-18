@@ -17,6 +17,7 @@ app.use('/api/encaminhamentos', require('./routes/encaminhamentos'))
 app.use('/api/relatorios',      require('./routes/relatorios'))
 app.use('/api/visitas',         require('./routes/visitas'))
 app.use('/api/alertas',         require('./routes/alertas'))
+app.use('/api/agenda',          require('./routes/agenda'))
 
 // ── Auth ──────────────────────────────────────────────────────
 const bcrypt = require('bcrypt')

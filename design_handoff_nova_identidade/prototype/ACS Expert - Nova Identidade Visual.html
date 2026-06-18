@@ -1,0 +1,1473 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<title>ACS Expert — Nova Identidade Visual</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="deck-stage.js"></script>
+<style>
+  :root{
+    --azul:#0B3A6F;
+    --azul-900:#081F3D;
+    --azul-700:#104C8F;
+    --azul-300:#6FA3D6;
+    --azul-100:#D6E4F2;
+    --verde:#2F9E6E;
+    --verde-300:#8FD1B3;
+    --coral:#E76F4A;
+    --coral-300:#F4B39E;
+    --amar:#F2B134;
+    --paper:#F5F1EB;
+    --paper-2:#EDE6DA;
+    --ink:#0E1726;
+    --ink-2:#3A4656;
+    --ink-3:#6C7788;
+    --line:#1c2a3d14;
+    --line-strong:#1c2a3d28;
+    --white:#ffffff;
+  }
+
+  html, body { margin:0; padding:0; background:#000; color:var(--ink); font-family:'Inter',-apple-system,sans-serif; }
+
+  /* Slide base */
+  .slide{
+    width:1920px; height:1080px;
+    background:var(--paper);
+    color:var(--ink);
+    overflow:hidden;
+    position:relative;
+    display:flex;
+    flex-direction:column;
+  }
+  .slide.dark{ background:var(--ink); color:var(--paper); }
+  .slide.blue{ background:var(--azul); color:var(--paper); }
+  .slide.white{ background:#fff; }
+
+  /* Frame chrome — tiny header on every slide */
+  .frame{
+    position:absolute; inset:0;
+    padding:56px 80px;
+    display:flex; flex-direction:column;
+    box-sizing:border-box;
+  }
+  .chrome-top{
+    display:flex; justify-content:space-between; align-items:center;
+    font-family:'JetBrains Mono',monospace;
+    font-size:14px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--ink-3);
+  }
+  .dark .chrome-top, .blue .chrome-top{ color:#ffffff66; }
+  .chrome-bot{
+    margin-top:auto;
+    display:flex; justify-content:space-between; align-items:center;
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--ink-3);
+  }
+  .dark .chrome-bot, .blue .chrome-bot{ color:#ffffff55; }
+
+  /* Typography */
+  .display{ font-family:'Sora',sans-serif; font-weight:500; letter-spacing:-0.02em; line-height:0.98; }
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace;
+    font-size:14px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--coral);
+  }
+  .blue .eyebrow{ color:var(--coral-300); }
+  .dark .eyebrow{ color:var(--coral); }
+
+  /* ── SLIDE 1: COVER ───────────────────────────────────────── */
+  .cover{ background:var(--paper); }
+  .cover .bg-wordmark{
+    position:absolute;
+    left:-40px; bottom:-60px;
+    font-family:'Sora',sans-serif;
+    font-weight:700;
+    font-size:560px;
+    line-height:0.8;
+    color:var(--ink);
+    opacity:.055;
+    letter-spacing:-0.05em;
+    pointer-events:none;
+    overflow:hidden;
+  }
+  .cover .content{
+    position:absolute;
+    left:80px; top:260px;
+    z-index:2;
+  }
+  .cover h1{
+    font-family:'Sora',sans-serif; font-weight:600;
+    font-size:200px; line-height:0.92;
+    letter-spacing:-0.035em;
+    margin:0;
+    color:var(--ink);
+  }
+  .cover h1 .accent{ color:var(--coral); font-weight:500; font-style:italic; }
+  .cover .sub{
+    margin-top:48px;
+    font-family:'Sora',sans-serif;
+    font-size:40px;
+    font-weight:400;
+    line-height:1.2;
+    max-width:1200px;
+    color:var(--ink-2);
+  }
+  .cover .meta{
+    position:absolute;
+    right:80px; top:260px;
+    width:360px;
+    z-index:2;
+  }
+  .cover .meta .mono-list{
+    font-family:'JetBrains Mono',monospace;
+    font-size:14px;
+    letter-spacing:.04em;
+    color:var(--ink-2);
+    line-height:2;
+    text-transform:uppercase;
+  }
+  .cover .meta .mono-list .k{ color:var(--ink-3); display:inline-block; width:140px; }
+
+  /* Logo mark — "Pulso + Território" */
+  .mark{
+    display:inline-flex; align-items:center; gap:18px;
+  }
+  .mark-symbol{
+    width:64px; height:64px;
+    display:inline-flex; align-items:center; justify-content:center;
+  }
+  .mark-wordmark{
+    font-family:'Sora',sans-serif; font-weight:600;
+    font-size:34px; letter-spacing:-0.02em;
+    color:var(--ink);
+    line-height:1;
+  }
+  .mark-wordmark .expert{ font-weight:400; color:var(--ink-3); }
+
+  /* ── SLIDE helpers ───────────────────────────────────────── */
+  .slide-title{
+    font-family:'Sora',sans-serif;
+    font-weight:500;
+    font-size:80px;
+    line-height:0.98;
+    letter-spacing:-0.025em;
+    margin:0;
+  }
+  .slide-eyebrow{
+    font-family:'JetBrains Mono',monospace;
+    font-size:14px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--ink-3);
+  }
+  .dark .slide-eyebrow, .blue .slide-eyebrow{ color:#ffffff88; }
+
+  .mono{ font-family:'JetBrains Mono',monospace; }
+
+  /* ── SLIDE 2: Princípios ─────────────────────────────────── */
+  .principles{
+    display:grid; grid-template-columns:1.1fr 1fr; gap:120px;
+    margin-top:60px;
+  }
+  .principle{
+    padding:40px 0;
+    border-top:1px solid var(--line-strong);
+  }
+  .principle .num{
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px; letter-spacing:.1em;
+    color:var(--coral);
+  }
+  .principle h3{
+    font-family:'Sora',sans-serif; font-weight:500;
+    font-size:44px; margin:14px 0 14px 0;
+    letter-spacing:-0.02em; line-height:1.05;
+  }
+  .principle p{
+    font-size:21px; line-height:1.5;
+    color:var(--ink-2); max-width:520px; margin:0;
+  }
+
+  /* ── SLIDE 3: Logo system ────────────────────────────────── */
+  .logo-board{
+    display:grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap:60px;
+    margin-top:40px;
+    flex:1;
+  }
+  .logo-primary{
+    background:var(--white);
+    border-radius:24px;
+    padding:80px;
+    display:flex; align-items:center; justify-content:center;
+    position:relative;
+    overflow:hidden;
+  }
+  .logo-primary::before{
+    content:""; position:absolute; inset:0;
+    background:
+      linear-gradient(var(--line) 1px, transparent 1px) 0 0/40px 40px,
+      linear-gradient(90deg, var(--line) 1px, transparent 1px) 0 0/40px 40px;
+    opacity:.6;
+  }
+  .logo-primary .mark-big{
+    position:relative; z-index:1;
+    display:flex; align-items:center; gap:36px;
+  }
+  .logo-primary .mark-big .mark-symbol{ width:160px; height:160px; }
+  .logo-primary .mark-big .wm{
+    font-family:'Sora',sans-serif; font-weight:600;
+    font-size:96px; letter-spacing:-0.03em; line-height:0.95;
+    color:var(--ink);
+  }
+  .logo-primary .mark-big .wm small{
+    display:block;
+    font-family:'JetBrains Mono',monospace;
+    font-size:15px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--ink-3);
+    font-weight:500;
+    margin-top:10px;
+  }
+  .logo-variants{
+    display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr;
+    gap:20px;
+  }
+  .lv{
+    border-radius:20px;
+    padding:32px;
+    display:flex; flex-direction:column; justify-content:space-between;
+    position:relative;
+    overflow:hidden;
+  }
+  .lv .label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px; letter-spacing:.1em; text-transform:uppercase;
+    opacity:.7;
+  }
+  .lv-paper{ background:var(--paper-2); color:var(--ink); }
+  .lv-blue{ background:var(--azul); color:var(--paper); }
+  .lv-ink{ background:var(--ink); color:var(--paper); }
+  .lv-coral{ background:var(--coral); color:var(--white); }
+  .lv .art{ display:flex; align-items:center; justify-content:center; flex:1; }
+
+  /* ── SLIDE 4: Construction ───────────────────────────────── */
+  .construction{
+    display:grid; grid-template-columns:1.2fr 1fr; gap:80px;
+    flex:1;
+    margin-top:40px;
+  }
+  .construction .grid-canvas{
+    background:#fff; border-radius:24px; position:relative;
+    display:flex; align-items:center; justify-content:center;
+    overflow:hidden;
+  }
+  .construction .grid-canvas svg{ width:80%; height:auto; }
+
+  .construction .notes{ padding:20px 0; }
+  .construction .notes h3{
+    font-family:'Sora',sans-serif; font-weight:500;
+    font-size:36px; margin:0 0 20px 0; letter-spacing:-0.02em;
+  }
+  .construction .notes p{
+    font-size:20px; line-height:1.55; color:var(--ink-2);
+    max-width:540px; margin:0 0 30px 0;
+  }
+  .construction .notes .spec{
+    border-top:1px solid var(--line-strong);
+    padding:18px 0; display:flex; gap:20px;
+    font-family:'JetBrains Mono',monospace; font-size:14px;
+    letter-spacing:.05em;
+  }
+  .construction .notes .spec .k{ color:var(--ink-3); text-transform:uppercase; letter-spacing:.12em; min-width:120px; }
+  .construction .notes .spec .v{ color:var(--ink); }
+
+  /* ── SLIDE 5: Colors ─────────────────────────────────────── */
+  .palette{
+    display:grid;
+    grid-template-columns: 1.6fr 1fr 1fr 1fr 1fr;
+    gap:16px;
+    flex:1;
+    margin-top:40px;
+  }
+  .swatch{
+    border-radius:20px;
+    padding:32px;
+    display:flex; flex-direction:column; justify-content:space-between;
+    position:relative;
+    overflow:hidden;
+  }
+  .swatch .role{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px; letter-spacing:.14em; text-transform:uppercase;
+    opacity:.8;
+  }
+  .swatch .name{
+    font-family:'Sora',sans-serif; font-weight:500;
+    font-size:44px; line-height:1; letter-spacing:-0.02em;
+    margin-top:auto;
+  }
+  .swatch .specs{
+    margin-top:18px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px; line-height:1.8;
+    opacity:.85;
+  }
+  .swatch .specs .label{ opacity:.6; display:inline-block; width:44px; }
+  .sw-azul{ background:var(--azul); color:#fff; }
+  .sw-verde{ background:var(--verde); color:#fff; }
+  .sw-coral{ background:var(--coral); color:#fff; }
+  .sw-paper{ background:var(--paper-2); color:var(--ink); }
+  .sw-ink{ background:var(--ink); color:var(--paper); }
+
+  .palette-footnote{
+    margin-top:30px;
+    display:grid; grid-template-columns:repeat(6,1fr); gap:12px;
+  }
+  .mini-sw{
+    border-radius:12px;
+    padding:14px 16px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    display:flex; flex-direction:column; gap:4px;
+    height:80px; justify-content:space-between;
+  }
+  .mini-sw .r{ opacity:.75; text-transform:uppercase; letter-spacing:.1em; font-size:10px;}
+  .mini-sw .h{ font-size:13px; }
+
+  /* ── SLIDE 6: Typography ─────────────────────────────────── */
+  .type-hero{
+    margin-top:30px;
+    padding:60px 0;
+    border-top:1px solid var(--line-strong);
+    border-bottom:1px solid var(--line-strong);
+    display:flex; align-items:baseline; justify-content:space-between;
+  }
+  .type-hero .sample{
+    font-family:'Sora',sans-serif;
+    font-weight:500;
+    font-size:280px;
+    line-height:0.85;
+    letter-spacing:-0.04em;
+    color:var(--ink);
+  }
+  .type-hero .meta{
+    text-align:right;
+    font-family:'JetBrains Mono',monospace;
+    font-size:14px;
+    color:var(--ink-3);
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    line-height:2;
+  }
+  .type-grid{
+    display:grid; grid-template-columns:1fr 1fr 1fr; gap:60px;
+    margin-top:50px;
+  }
+  .type-spec h4{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--ink-3);
+    margin:0 0 16px 0;
+  }
+  .type-spec .big{
+    font-family:'Sora',sans-serif;
+    font-weight:500;
+    font-size:64px;
+    letter-spacing:-0.025em;
+    line-height:1;
+    margin:0 0 14px 0;
+  }
+  .type-spec .big.inter{ font-family:'Inter',sans-serif; font-weight:500; }
+  .type-spec .big.mono{ font-family:'JetBrains Mono',monospace; font-weight:500; }
+  .type-spec p{
+    font-size:17px; line-height:1.55;
+    color:var(--ink-2); margin:0;
+  }
+
+  /* ── SLIDE 7: Voice / Tone ───────────────────────────────── */
+  .voice{
+    display:grid; grid-template-columns: 1.1fr 1fr; gap:100px;
+    flex:1; margin-top:40px;
+  }
+  .voice-quote{
+    font-family:'Sora',sans-serif;
+    font-weight:400;
+    font-size:60px;
+    line-height:1.1;
+    letter-spacing:-0.02em;
+    color:var(--ink);
+  }
+  .voice-quote .q{ color:var(--coral); font-style:italic; }
+  .voice-table{ display:flex; flex-direction:column; gap:0; }
+  .voice-row{
+    display:grid; grid-template-columns: 180px 1fr 1fr;
+    gap:24px;
+    padding:24px 0;
+    border-top:1px solid var(--line-strong);
+    align-items:start;
+  }
+  .voice-row:last-child{ border-bottom:1px solid var(--line-strong); }
+  .voice-row .h{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--ink-3);
+    padding-top:6px;
+  }
+  .voice-row .yes, .voice-row .no{
+    font-family:'Sora',sans-serif;
+    font-size:22px; line-height:1.35;
+  }
+  .voice-row .yes{ color:var(--ink); }
+  .voice-row .yes::before{
+    content:"✓ ";
+    color:var(--verde);
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+  }
+  .voice-row .no{ color:var(--ink-3); text-decoration:line-through; text-decoration-color:var(--coral); text-decoration-thickness:1px; }
+
+  /* ── SLIDE 8: UI Kit ─────────────────────────────────────── */
+  .ui-canvas{
+    flex:1;
+    display:grid;
+    grid-template-columns: 380px 1fr 1fr;
+    gap:40px;
+    margin-top:40px;
+  }
+  .phone{
+    width:380px; height:820px;
+    background:#fff;
+    border-radius:40px;
+    box-shadow: 0 40px 80px rgba(10,20,40,.18), 0 0 0 8px #1c2a3d, 0 0 0 10px #384a63;
+    overflow:hidden;
+    position:relative;
+    font-family:'Inter',sans-serif;
+    color:var(--ink);
+  }
+  .phone .notch{
+    position:absolute; top:12px; left:50%; transform:translateX(-50%);
+    width:100px; height:28px; background:#0e1726; border-radius:999px;
+    z-index:10;
+  }
+  .phone .status{
+    padding:14px 24px 0 24px;
+    display:flex; justify-content:space-between;
+    font-size:13px; font-weight:600;
+    color:var(--ink);
+  }
+  .phone-inner{
+    padding:60px 20px 90px 20px;
+    height:100%; box-sizing:border-box;
+    overflow:hidden;
+  }
+  .phone .greet{
+    display:flex; align-items:center; gap:12px;
+    padding:12px 4px;
+  }
+  .phone .avatar{
+    width:44px; height:44px; border-radius:50%;
+    background:linear-gradient(135deg,var(--azul),var(--verde));
+    display:flex; align-items:center; justify-content:center;
+    color:#fff; font-weight:600; font-size:15px;
+  }
+  .phone .greet .name{ font-weight:600; font-size:15px; color:var(--ink); line-height:1.2; }
+  .phone .greet .sub{ font-size:12px; color:var(--ink-3); }
+
+  .phone .today{
+    background:var(--azul);
+    color:#fff;
+    border-radius:20px;
+    padding:20px;
+    margin-top:10px;
+    position:relative;
+    overflow:hidden;
+  }
+  .phone .today::after{
+    content:""; position:absolute; right:-40px; top:-40px;
+    width:160px; height:160px; border-radius:50%;
+    background:radial-gradient(circle, rgba(255,255,255,.1), transparent 70%);
+  }
+  .phone .today .eb{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px; letter-spacing:.12em; text-transform:uppercase;
+    opacity:.7;
+  }
+  .phone .today h3{
+    font-family:'Sora',sans-serif; font-weight:500;
+    font-size:22px; margin:4px 0 16px 0;
+    letter-spacing:-0.01em;
+  }
+  .phone .today .metrics{
+    display:flex; gap:8px;
+  }
+  .phone .today .metric{
+    flex:1;
+    background:rgba(255,255,255,.1);
+    border-radius:12px;
+    padding:10px 12px;
+  }
+  .phone .today .metric .n{
+    font-family:'Sora',sans-serif; font-weight:600;
+    font-size:22px; line-height:1;
+  }
+  .phone .today .metric .l{
+    font-size:10px; opacity:.8; margin-top:4px;
+  }
+
+  .phone h4{
+    font-family:'Sora',sans-serif; font-weight:500;
+    font-size:14px; margin:20px 4px 10px 4px;
+    color:var(--ink);
+    letter-spacing:-0.01em;
+  }
+  .phone .alert{
+    background:#fff;
+    border:1px solid var(--line-strong);
+    border-left:4px solid var(--coral);
+    border-radius:12px;
+    padding:12px 14px;
+    margin-bottom:8px;
+    font-size:12px;
+  }
+  .phone .alert.amb{ border-left-color:var(--amar); }
+  .phone .alert .t{ font-weight:600; color:var(--ink); }
+  .phone .alert .s{ color:var(--ink-3); font-size:11px; margin-top:2px; }
+  .phone .alert .chip{
+    display:inline-block;
+    font-family:'JetBrains Mono',monospace;
+    font-size:9px; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--coral); font-weight:600;
+    margin-bottom:4px;
+  }
+  .phone .alert.amb .chip{ color:#B87610; }
+
+  .phone .nav{
+    position:absolute; bottom:0; left:0; right:0;
+    background:#fff;
+    border-top:1px solid var(--line);
+    display:flex; justify-content:space-around;
+    padding:12px 8px 24px 8px;
+    font-size:10px;
+  }
+  .phone .nav .item{
+    display:flex; flex-direction:column; align-items:center; gap:4px;
+    color:var(--ink-3);
+  }
+  .phone .nav .item.active{ color:var(--azul); }
+  .phone .nav .dot{
+    width:22px; height:22px; border-radius:6px;
+    background:var(--paper-2);
+  }
+  .phone .nav .item.active .dot{ background:var(--azul); }
+
+  .ui-components{
+    display:flex; flex-direction:column; gap:20px;
+  }
+  .comp-card{
+    background:#fff;
+    border-radius:18px;
+    padding:24px;
+    border:1px solid var(--line);
+  }
+  .comp-card h4{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--ink-3);
+    margin:0 0 16px 0;
+  }
+  .comp-row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+
+  .btn-pr{
+    background:var(--azul);
+    color:#fff;
+    padding:12px 22px;
+    border-radius:12px;
+    font-family:'Inter',sans-serif; font-weight:600; font-size:14px;
+    border:0;
+  }
+  .btn-sec{
+    background:transparent;
+    border:1.5px solid var(--azul);
+    color:var(--azul);
+    padding:11px 22px;
+    border-radius:12px;
+    font-family:'Inter',sans-serif; font-weight:600; font-size:14px;
+  }
+  .btn-cor{
+    background:var(--coral);
+    color:#fff;
+    padding:12px 22px;
+    border-radius:12px;
+    font-family:'Inter',sans-serif; font-weight:600; font-size:14px;
+    border:0;
+  }
+
+  .risk{
+    display:inline-flex; align-items:center; gap:6px;
+    padding:6px 12px;
+    border-radius:999px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px; font-weight:600;
+    letter-spacing:.1em; text-transform:uppercase;
+  }
+  .risk .d{ width:7px; height:7px; border-radius:50%; background:currentColor; }
+  .risk-hi{ background:#FDE8E2; color:#B73A1A; }
+  .risk-md{ background:#FDF3DC; color:#935910; }
+  .risk-lo{ background:#DFF3E8; color:#1B6E49; }
+
+  .chip-tog{
+    padding:9px 16px;
+    border-radius:999px;
+    font-family:'Inter',sans-serif; font-size:13px; font-weight:500;
+    background:#fff;
+    border:1.5px solid var(--line-strong);
+    color:var(--ink-2);
+  }
+  .chip-tog.on{
+    background:var(--azul);
+    border-color:var(--azul);
+    color:#fff;
+  }
+
+  /* ── SLIDE 9: Application ────────────────────────────────── */
+  .app-canvas{
+    flex:1;
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap:30px;
+    margin-top:30px;
+  }
+  .app-card{
+    border-radius:24px;
+    padding:50px;
+    position:relative;
+    overflow:hidden;
+    display:flex; flex-direction:column; justify-content:space-between;
+  }
+  .app-card .eb{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px; letter-spacing:.14em; text-transform:uppercase;
+    opacity:.7;
+  }
+  .app-card h3{
+    font-family:'Sora',sans-serif; font-weight:500;
+    font-size:36px; line-height:1.05;
+    letter-spacing:-0.02em;
+    margin:12px 0 20px 0;
+    max-width:420px;
+  }
+  .app-card p{
+    font-size:18px; line-height:1.5;
+    margin:0;
+    max-width:480px;
+  }
+
+  .app-vest{ background:var(--coral); color:#fff; }
+  .app-vest .vest-art{
+    flex:1; display:flex; align-items:center; justify-content:center;
+    margin-top:20px;
+  }
+  .app-poster{ background:var(--azul); color:#fff; }
+  .app-poster .poster-num{
+    font-family:'Sora',sans-serif; font-weight:700;
+    font-size:420px; line-height:0.8;
+    letter-spacing:-0.06em;
+    margin-top:auto;
+    color:rgba(255,255,255,.15);
+    align-self:flex-end;
+  }
+  .app-card-id{ background:var(--ink); color:var(--paper); }
+  .app-card-id .id-card{
+    background:#fff; color:var(--ink);
+    border-radius:16px;
+    padding:28px;
+    display:flex; flex-direction:column; gap:16px;
+    width:360px;
+    align-self:flex-end;
+    box-shadow:0 20px 60px rgba(0,0,0,.4);
+  }
+  .app-card-id .id-card .id-head{
+    display:flex; align-items:center; gap:14px;
+    padding-bottom:16px;
+    border-bottom:1px solid var(--line-strong);
+  }
+  .app-card-id .id-card .id-body{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px; line-height:2;
+    letter-spacing:.04em;
+  }
+  .app-card-id .id-card .id-body .k{ color:var(--ink-3); text-transform:uppercase; letter-spacing:.12em; min-width:90px; display:inline-block; }
+
+  .app-web{ background:var(--paper-2); color:var(--ink); }
+  .app-web .browser{
+    background:#fff;
+    border-radius:14px;
+    padding:14px;
+    margin-top:auto;
+    box-shadow: 0 30px 60px rgba(10,20,40,.08);
+    width:100%;
+  }
+  .app-web .browser .dots{
+    display:flex; gap:6px; margin-bottom:12px;
+  }
+  .app-web .browser .dots span{ width:10px; height:10px; border-radius:50%; background:var(--paper-2); }
+  .app-web .browser .bar{
+    display:flex; align-items:center; gap:14px;
+    padding:14px; background:var(--paper); border-radius:10px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px; color:var(--ink-3);
+  }
+  .app-web .browser .content{
+    padding:20px 4px 0 4px;
+  }
+  .app-web .browser .h{
+    font-family:'Sora',sans-serif; font-weight:500;
+    font-size:22px; letter-spacing:-0.02em;
+    margin-bottom:14px;
+  }
+  .app-web .browser .stats{
+    display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px;
+  }
+  .app-web .browser .stat{
+    background:var(--paper); padding:14px; border-radius:10px;
+  }
+  .app-web .browser .stat .n{
+    font-family:'Sora',sans-serif; font-weight:600;
+    font-size:26px; color:var(--ink);
+  }
+  .app-web .browser .stat .l{
+    font-size:10px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.1em;
+    margin-top:2px;
+  }
+
+  /* ── SLIDE 10: Sign off ──────────────────────────────────── */
+  .signoff{
+    background:var(--ink); color:var(--paper);
+    flex:1;
+    display:flex; flex-direction:column; justify-content:space-between;
+  }
+  .signoff .frame{ padding:80px 80px; }
+  .signoff .big{
+    font-family:'Sora',sans-serif; font-weight:400;
+    font-size:140px; line-height:0.95;
+    letter-spacing:-0.035em;
+    margin:auto 0;
+    max-width:1500px;
+  }
+  .signoff .big .i{ font-style:italic; color:var(--coral-300); font-weight:300; }
+
+</style>
+</head>
+<body>
+
+<deck-stage width="1920" height="1080">
+
+  <!-- ─────────── 1. COVER ─────────── -->
+  <section class="slide cover" data-label="Capa">
+    <div class="bg-wordmark">acs</div>
+    <div class="frame">
+      <div class="chrome-top">
+        <span>Identidade Visual — v1.0</span>
+        <span>Abril 2026</span>
+      </div>
+      <div class="chrome-bot">
+        <span class="mark">
+          <span class="mark-symbol">
+            <!-- Brand symbol: pulse+pin -->
+            <svg viewBox="0 0 64 64" width="36" height="36" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" style="color:var(--azul)">
+              <path d="M6 34 L18 34 L22 24 L28 44 L32 34 L40 34"/>
+              <path d="M40 34 C40 28 44 24 50 24 C56 24 60 28 60 34 C60 42 50 54 50 54 C50 54 40 42 40 34 Z" fill="var(--coral)" stroke="var(--coral)"/>
+              <circle cx="50" cy="34" r="3" fill="#fff" stroke="none"/>
+            </svg>
+          </span>
+          <span class="mark-wordmark">ACS <span class="expert">Expert</span></span>
+        </span>
+        <span>Projeto confidencial — MS / SUS</span>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="eyebrow">Nova identidade da marca</div>
+      <h1 style="margin-top:28px">
+        Cuidado<br>que <span class="accent">anda junto.</span>
+      </h1>
+      <div class="sub">Sistema visual para a ferramenta de triagem<br>domiciliar do Agente Comunitário de Saúde.</div>
+    </div>
+
+    <div class="meta">
+      <div class="mono-list">
+        <div><span class="k">cliente</span> SUS · MS</div>
+        <div><span class="k">produto</span> App ACS Expert</div>
+        <div><span class="k">escopo</span> Marca + UI</div>
+        <div><span class="k">versão</span> 1.0 / Abril 2026</div>
+        <div><span class="k">formato</span> 16 : 9  /  1920 × 1080</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────── 2. PRINCÍPIOS ─────────── -->
+  <section class="slide" data-label="Princípios">
+    <div class="frame">
+      <div class="chrome-top"><span>01 · Princípios</span><span>ACS Expert · Identidade</span></div>
+
+      <div style="margin-top:40px; max-width:1300px;">
+        <div class="eyebrow">Base da marca</div>
+        <h2 class="slide-title" style="margin-top:22px;">
+          Ferramenta de saúde pública.<br>
+          Nem institucional rígida,<br>
+          nem startup de app.
+        </h2>
+      </div>
+
+      <div class="principles">
+        <div>
+          <div class="principle">
+            <div class="num">01 / HUMANA</div>
+            <h3>Quem carrega é gente.</h3>
+            <p>O ACS caminha pela rua, bate em porta, conversa. A marca precisa ter calor humano — não a frieza de um painel hospitalar.</p>
+          </div>
+          <div class="principle">
+            <div class="num">02 / CONFIÁVEL</div>
+            <h3>Institucional, sem ser dura.</h3>
+            <p>Tipografia firme, cor âncora estável. A marca diz: isso é do SUS, isso funciona, isso é sério.</p>
+          </div>
+        </div>
+        <div>
+          <div class="principle">
+            <div class="num">03 / DE CAMPO</div>
+            <h3>Lida bem com o sol da tarde.</h3>
+            <p>Alto contraste, formas cheias, sem gradientes delicados. Funciona em tela pequena, sol forte, dado ruim.</p>
+          </div>
+          <div class="principle">
+            <div class="num">04 / CLARA</div>
+            <h3>Uma decisão por tela.</h3>
+            <p>Risco alto é vermelho. Ação é coral. Foco é uma cor só. O sistema ensina a ler em segundos.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="chrome-bot"><span>02 / 10</span><span>Princípios da identidade</span></div>
+    </div>
+  </section>
+
+  <!-- ─────────── 3. LOGO SYSTEM ─────────── -->
+  <section class="slide" data-label="Logotipo">
+    <div class="frame">
+      <div class="chrome-top"><span>02 · Marca</span><span>Sistema de logotipo</span></div>
+
+      <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:20px;">
+        <div>
+          <div class="eyebrow">A marca</div>
+          <h2 class="slide-title" style="margin-top:22px;">Pulso<br>encontra território.</h2>
+        </div>
+        <div style="max-width:480px; font-size:20px; line-height:1.55; color:var(--ink-2);">
+          Uma onda de pulso cardíaco que se dobra e vira um pino de localização. Saúde em movimento, porta a porta.
+        </div>
+      </div>
+
+      <div class="logo-board">
+        <!-- PRIMARY -->
+        <div class="logo-primary">
+          <div class="mark-big">
+            <span class="mark-symbol" style="width:170px; height:170px;">
+              <svg viewBox="0 0 64 64" width="170" height="170" fill="none" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 34 L17 34 L21 22 L28 46 L33 34 L40 34" stroke="var(--azul)"/>
+                <path d="M40 34 C40 27 45.5 22 52 22 C58.5 22 64 27 64 34 C64 43 52 58 52 58 C52 58 40 43 40 34 Z" fill="var(--coral)" stroke="var(--coral)"/>
+                <circle cx="52" cy="34" r="3.5" fill="#fff"/>
+              </svg>
+            </span>
+            <div>
+              <div class="wm">ACS <span style="color:var(--ink-3); font-weight:400;">Expert</span></div>
+              <small>Triagem domiciliar · SUS</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- VARIANTS -->
+        <div class="logo-variants">
+          <div class="lv lv-blue">
+            <div class="label">Fundo azul</div>
+            <div class="art">
+              <svg viewBox="0 0 64 64" width="90" height="90" fill="none" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 34 L17 34 L21 22 L28 46 L33 34 L40 34" stroke="#fff"/>
+                <path d="M40 34 C40 27 45.5 22 52 22 C58.5 22 64 27 64 34 C64 43 52 58 52 58 C52 58 40 43 40 34 Z" fill="var(--coral)" stroke="var(--coral)"/>
+                <circle cx="52" cy="34" r="3.5" fill="#fff"/>
+              </svg>
+            </div>
+          </div>
+          <div class="lv lv-paper">
+            <div class="label">Neutro</div>
+            <div class="art">
+              <svg viewBox="0 0 64 64" width="90" height="90" fill="none" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 34 L17 34 L21 22 L28 46 L33 34 L40 34" stroke="var(--ink)"/>
+                <path d="M40 34 C40 27 45.5 22 52 22 C58.5 22 64 27 64 34 C64 43 52 58 52 58 C52 58 40 43 40 34 Z" fill="var(--ink)" stroke="var(--ink)"/>
+                <circle cx="52" cy="34" r="3.5" fill="var(--paper-2)"/>
+              </svg>
+            </div>
+          </div>
+          <div class="lv lv-coral">
+            <div class="label">Fundo coral</div>
+            <div class="art">
+              <svg viewBox="0 0 64 64" width="90" height="90" fill="none" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 34 L17 34 L21 22 L28 46 L33 34 L40 34" stroke="#fff"/>
+                <path d="M40 34 C40 27 45.5 22 52 22 C58.5 22 64 27 64 34 C64 43 52 58 52 58 C52 58 40 43 40 34 Z" fill="#fff" stroke="#fff"/>
+                <circle cx="52" cy="34" r="3.5" fill="var(--coral)"/>
+              </svg>
+            </div>
+          </div>
+          <div class="lv lv-ink">
+            <div class="label">Dark mode</div>
+            <div class="art">
+              <svg viewBox="0 0 64 64" width="90" height="90" fill="none" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 34 L17 34 L21 22 L28 46 L33 34 L40 34" stroke="var(--paper)"/>
+                <path d="M40 34 C40 27 45.5 22 52 22 C58.5 22 64 27 64 34 C64 43 52 58 52 58 C52 58 40 43 40 34 Z" fill="var(--coral)" stroke="var(--coral)"/>
+                <circle cx="52" cy="34" r="3.5" fill="var(--ink)"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="chrome-bot"><span>03 / 10</span><span>Sistema de logotipo</span></div>
+    </div>
+  </section>
+
+  <!-- ─────────── 4. CONSTRUCTION ─────────── -->
+  <section class="slide" data-label="Construção">
+    <div class="frame">
+      <div class="chrome-top"><span>03 · Construção do símbolo</span><span>Malha · proporção · uso</span></div>
+
+      <div style="margin-top:20px;">
+        <div class="eyebrow">Geometria</div>
+        <h2 class="slide-title" style="margin-top:22px;">Um sinal vital<br>que aponta um lugar.</h2>
+      </div>
+
+      <div class="construction">
+        <div class="grid-canvas">
+          <svg viewBox="0 0 640 420" width="100%" height="100%">
+            <!-- grid -->
+            <defs>
+              <pattern id="g" width="20" height="20" patternUnits="userSpaceOnUse">
+                <path d="M20 0 L0 0 0 20" fill="none" stroke="#0B3A6F" stroke-width="0.5" opacity="0.12"/>
+              </pattern>
+            </defs>
+            <rect width="640" height="420" fill="url(#g)"/>
+
+            <!-- construction circles -->
+            <circle cx="460" cy="210" r="120" fill="none" stroke="#E76F4A" stroke-width="1" stroke-dasharray="3 4" opacity=".55"/>
+            <circle cx="460" cy="180" r="70" fill="none" stroke="#E76F4A" stroke-width="1" stroke-dasharray="3 4" opacity=".55"/>
+            <line x1="60" y1="210" x2="600" y2="210" stroke="#0B3A6F" stroke-width="1" stroke-dasharray="3 4" opacity=".35"/>
+            <line x1="460" y1="60" x2="460" y2="360" stroke="#0B3A6F" stroke-width="1" stroke-dasharray="3 4" opacity=".35"/>
+
+            <!-- pulse -->
+            <path d="M60 210 L200 210 L240 140 L290 290 L330 210 L400 210"
+                  stroke="#0B3A6F" stroke-width="16" fill="none"
+                  stroke-linecap="round" stroke-linejoin="round"/>
+
+            <!-- pin -->
+            <path d="M400 210 C400 152 448 110 500 110 C552 110 600 152 600 210 C600 280 500 380 500 380 C500 380 400 280 400 210 Z"
+                  fill="#E76F4A"/>
+            <circle cx="500" cy="205" r="26" fill="#fff"/>
+
+            <!-- proportion letters -->
+            <text x="70" y="90" font-family="JetBrains Mono" font-size="14" fill="#3A4656" letter-spacing="2" font-weight="500">1x</text>
+            <text x="450" y="90" font-family="JetBrains Mono" font-size="14" fill="#E76F4A" letter-spacing="2" font-weight="500">2x</text>
+            <text x="310" y="405" font-family="JetBrains Mono" font-size="14" fill="#3A4656" letter-spacing="2" font-weight="500">eixo base</text>
+          </svg>
+        </div>
+
+        <div class="notes">
+          <h3>Duas famílias de formas.</h3>
+          <p>Do lado esquerdo, <b>linha</b> — a onda de pulso, sinal vital. Do lado direito, <b>massa</b> — o pino, lugar do paciente. A marca é lida como uma única ação: <i>o cuidado chega até ali</i>.</p>
+          <div class="spec"><span class="k">Altura x</span><span class="v">Raio do pino = 2x da linha</span></div>
+          <div class="spec"><span class="k">Stroke</span><span class="v">12–16pt · sempre arredondado</span></div>
+          <div class="spec"><span class="k">Área de respiro</span><span class="v">= altura do símbolo ÷ 2</span></div>
+          <div class="spec"><span class="k">Tam. mínimo</span><span class="v">Símbolo 24px · Lockup 120px</span></div>
+        </div>
+      </div>
+
+      <div class="chrome-bot"><span>04 / 10</span><span>Construção</span></div>
+    </div>
+  </section>
+
+  <!-- ─────────── 5. COLORS ─────────── -->
+  <section class="slide" data-label="Paleta">
+    <div class="frame">
+      <div class="chrome-top"><span>04 · Paleta</span><span>Cor com função</span></div>
+
+      <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:20px;">
+        <div>
+          <div class="eyebrow">Sistema cromático</div>
+          <h2 class="slide-title" style="margin-top:22px;">Cada cor<br>faz uma coisa.</h2>
+        </div>
+        <div style="max-width:460px; font-size:19px; line-height:1.55; color:var(--ink-2);">
+          Azul é identidade. Coral chama ação. Verde confirma. O papel acolhe. Tinta contém. O risco clínico vem depois — e tem suas próprias três cores.
+        </div>
+      </div>
+
+      <div class="palette">
+        <div class="swatch sw-azul">
+          <div class="role">Âncora / Primária</div>
+          <div>
+            <div class="name">Azul<br>Profundo</div>
+            <div class="specs">
+              <div><span class="label">HEX</span>#0B3A6F</div>
+              <div><span class="label">RGB</span>11 · 58 · 111</div>
+              <div><span class="label">CMYK</span>90 · 70 · 20 · 40</div>
+            </div>
+          </div>
+        </div>
+        <div class="swatch sw-coral">
+          <div class="role">Ação / Acento</div>
+          <div>
+            <div class="name">Coral<br>Cuidado</div>
+            <div class="specs">
+              <div><span class="label">HEX</span>#E76F4A</div>
+              <div><span class="label">RGB</span>231 · 111 · 74</div>
+            </div>
+          </div>
+        </div>
+        <div class="swatch sw-verde">
+          <div class="role">Confirmação</div>
+          <div>
+            <div class="name">Verde<br>Vivo</div>
+            <div class="specs">
+              <div><span class="label">HEX</span>#2F9E6E</div>
+              <div><span class="label">RGB</span>47 · 158 · 110</div>
+            </div>
+          </div>
+        </div>
+        <div class="swatch sw-paper">
+          <div class="role">Fundo · Papel</div>
+          <div>
+            <div class="name">Bege<br>Campo</div>
+            <div class="specs">
+              <div><span class="label">HEX</span>#EDE6DA</div>
+              <div><span class="label">RGB</span>237 · 230 · 218</div>
+            </div>
+          </div>
+        </div>
+        <div class="swatch sw-ink">
+          <div class="role">Texto · Contraste</div>
+          <div>
+            <div class="name">Tinta</div>
+            <div class="specs">
+              <div><span class="label">HEX</span>#0E1726</div>
+              <div><span class="label">RGB</span>14 · 23 · 38</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Clinical / functional -->
+      <div style="margin-top:30px;">
+        <div style="font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-3); margin-bottom:14px;">
+          — Classificação de risco clínico (uso restrito)
+        </div>
+        <div class="palette-footnote">
+          <div class="mini-sw" style="background:#FDE8E2; color:#B73A1A;">
+            <span class="r">Alto risco</span><span class="h">#B73A1A / #FDE8E2</span>
+          </div>
+          <div class="mini-sw" style="background:#FDF3DC; color:#935910;">
+            <span class="r">Médio risco</span><span class="h">#935910 / #FDF3DC</span>
+          </div>
+          <div class="mini-sw" style="background:#DFF3E8; color:#1B6E49;">
+            <span class="r">Baixo risco</span><span class="h">#1B6E49 / #DFF3E8</span>
+          </div>
+          <div class="mini-sw" style="background:#F5F1EB; color:var(--ink-3); border:1px solid var(--line-strong);">
+            <span class="r">Superfície base</span><span class="h">#F5F1EB</span>
+          </div>
+          <div class="mini-sw" style="background:#fff; color:var(--ink-3); border:1px solid var(--line-strong);">
+            <span class="r">Card</span><span class="h">#FFFFFF</span>
+          </div>
+          <div class="mini-sw" style="background:#6C7788; color:#fff;">
+            <span class="r">Texto auxiliar</span><span class="h">#6C7788</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="chrome-bot"><span>05 / 10</span><span>Paleta</span></div>
+    </div>
+  </section>
+
+  <!-- ─────────── 6. TYPOGRAPHY ─────────── -->
+  <section class="slide" data-label="Tipografia">
+    <div class="frame">
+      <div class="chrome-top"><span>05 · Tipografia</span><span>Sora · Inter · JetBrains Mono</span></div>
+
+      <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:20px;">
+        <div>
+          <div class="eyebrow">Sistema tipográfico</div>
+          <h2 class="slide-title" style="margin-top:22px;">Firme para ler<br>no sol.</h2>
+        </div>
+        <div style="max-width:480px; font-size:19px; line-height:1.55; color:var(--ink-2);">
+          Sora dá presença institucional; Inter segura a densidade de dados; Mono etiqueta metadados clínicos e técnicos.
+        </div>
+      </div>
+
+      <div class="type-hero">
+        <div class="sample">Aa&nbsp;<span style="color:var(--coral)">Bb</span></div>
+        <div class="meta">
+          Sora · Display<br>
+          Weights 300–700<br>
+          Google Fonts — open source
+        </div>
+      </div>
+
+      <div class="type-grid">
+        <div class="type-spec">
+          <h4>Display · títulos / marca</h4>
+          <div class="big">Visitas hoje</div>
+          <p><b>Sora Medium, -2.5%</b> letter-spacing. Usada em títulos de tela, KPIs, cabeçalhos. Weight máximo 600; evitar 700+ em tela pequena.</p>
+        </div>
+        <div class="type-spec">
+          <h4>UI · corpo do app</h4>
+          <div class="big inter">Maria Silva, 67</div>
+          <p><b>Inter Regular / Semibold</b>. É a letra que roda o app: listas, formulários, botões. Tamanho mínimo em campo: 16px.</p>
+        </div>
+        <div class="type-spec">
+          <h4>Metadado · etiquetas</h4>
+          <div class="big mono" style="font-size:42px;">CNS · 898 001 447</div>
+          <p><b>JetBrains Mono</b> para códigos, CPF, CNS, horários, coordenadas, status. Letra espaçada <b>+12%</b>, caixa alta.</p>
+        </div>
+      </div>
+
+      <div class="chrome-bot"><span>06 / 10</span><span>Tipografia</span></div>
+    </div>
+  </section>
+
+  <!-- ─────────── 7. VOICE ─────────── -->
+  <section class="slide" data-label="Tom de voz">
+    <div class="frame">
+      <div class="chrome-top"><span>06 · Tom de voz</span><span>Como a marca fala</span></div>
+
+      <div style="margin-top:20px;">
+        <div class="eyebrow">Voz</div>
+        <h2 class="slide-title" style="margin-top:22px;">Frases curtas.<br>Palavras que<br>cabem na boca.</h2>
+      </div>
+
+      <div class="voice">
+        <div class="voice-quote">
+          “Maria não recebe visita <span class="q">há&nbsp;12&nbsp;dias.</span><br>É bom passar lá hoje.”
+        </div>
+
+        <div class="voice-table">
+          <div class="voice-row">
+            <div class="h">Alerta</div>
+            <div class="yes">Alto risco — passar hoje</div>
+            <div class="no">Notificação: prioridade P1 elevada</div>
+          </div>
+          <div class="voice-row">
+            <div class="h">Vazio</div>
+            <div class="yes">Nenhuma visita agendada. Bom descanso.</div>
+            <div class="no">No data available.</div>
+          </div>
+          <div class="voice-row">
+            <div class="h">Erro</div>
+            <div class="yes">Esse CPF já tem cadastro. Quer abrir?</div>
+            <div class="no">Erro 409: conflito de recurso.</div>
+          </div>
+          <div class="voice-row">
+            <div class="h">Confirmação</div>
+            <div class="yes">Triagem salva. Sincroniza quando pegar sinal.</div>
+            <div class="no">Operação realizada com sucesso.</div>
+          </div>
+          <div class="voice-row">
+            <div class="h">Ação</div>
+            <div class="yes">Encaminhar para UBS</div>
+            <div class="no">Submeter solicitação ao estabelecimento</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="chrome-bot"><span>07 / 10</span><span>Tom de voz</span></div>
+    </div>
+  </section>
+
+  <!-- ─────────── 8. UI KIT ─────────── -->
+  <section class="slide" data-label="UI kit">
+    <div class="frame">
+      <div class="chrome-top"><span>07 · Sistema UI</span><span>Componentes no app</span></div>
+
+      <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:20px;">
+        <div>
+          <div class="eyebrow">Traduzindo a marca em produto</div>
+          <h2 class="slide-title" style="margin-top:22px;">A marca<br>no celular do ACS.</h2>
+        </div>
+        <div style="max-width:460px; font-size:19px; line-height:1.55; color:var(--ink-2);">
+          Cantos generosos (16–20px), cards claros, ação única por tela. O azul ancora, o coral chama, o risco clínico tem sua gramática própria.
+        </div>
+      </div>
+
+      <div class="ui-canvas">
+        <!-- PHONE -->
+        <div class="phone">
+          <div class="notch"></div>
+          <div class="phone-inner">
+            <div class="greet">
+              <div class="avatar">LM</div>
+              <div>
+                <div class="name">Bom dia, Letícia</div>
+                <div class="sub">Microárea 3 · Vila Nova</div>
+              </div>
+            </div>
+
+            <div class="today">
+              <div class="eb">Agenda de hoje</div>
+              <h3>8 visitas planejadas</h3>
+              <div class="metrics">
+                <div class="metric"><div class="n">3</div><div class="l">realizadas</div></div>
+                <div class="metric"><div class="n">2</div><div class="l">urgentes</div></div>
+                <div class="metric"><div class="n">3</div><div class="l">restantes</div></div>
+              </div>
+            </div>
+
+            <h4>Alertas</h4>
+            <div class="alert">
+              <div class="chip">Alto risco</div>
+              <div class="t">Maria Silva, 67</div>
+              <div class="s">sem visita há 12 dias</div>
+            </div>
+            <div class="alert amb">
+              <div class="chip">Atenção</div>
+              <div class="t">João Pereira</div>
+              <div class="s">encaminhamento pendente há 5 dias</div>
+            </div>
+          </div>
+          <div class="nav">
+            <div class="item active"><div class="dot"></div>Início</div>
+            <div class="item"><div class="dot"></div>Agenda</div>
+            <div class="item"><div class="dot"></div>Pacientes</div>
+            <div class="item"><div class="dot"></div>Encaminhar</div>
+            <div class="item"><div class="dot"></div>Perfil</div>
+          </div>
+        </div>
+
+        <!-- Components col 1 -->
+        <div class="ui-components">
+          <div class="comp-card">
+            <h4>Botões</h4>
+            <div class="comp-row">
+              <button class="btn-pr">Entrar</button>
+              <button class="btn-sec">Cancelar</button>
+              <button class="btn-cor">Nova Triagem</button>
+            </div>
+            <div style="margin-top:16px;" class="comp-row">
+              <button class="btn-pr" style="font-size:13px; padding:10px 16px;">Salvar</button>
+              <button class="btn-sec" style="font-size:13px; padding:9px 16px;">Voltar</button>
+            </div>
+          </div>
+
+          <div class="comp-card">
+            <h4>Badges de risco</h4>
+            <div class="comp-row">
+              <span class="risk risk-hi"><span class="d"></span>Alto</span>
+              <span class="risk risk-md"><span class="d"></span>Médio</span>
+              <span class="risk risk-lo"><span class="d"></span>Baixo</span>
+            </div>
+          </div>
+
+          <div class="comp-card">
+            <h4>Chips de sintoma</h4>
+            <div class="comp-row">
+              <span class="chip-tog on">Hipertenso</span>
+              <span class="chip-tog on">Diabético</span>
+              <span class="chip-tog">Fumante</span>
+              <span class="chip-tog">Gestante</span>
+              <span class="chip-tog">Cardiopata</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Components col 2 -->
+        <div class="ui-components">
+          <div class="comp-card" style="background:var(--azul); color:#fff; border-color:var(--azul);">
+            <h4 style="color:#ffffffaa;">Card de prioridade · alto</h4>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.14em; color:var(--coral-300); margin-bottom:8px;">URGENTE</div>
+            <div style="font-family:'Sora',sans-serif; font-size:28px; font-weight:500; letter-spacing:-0.02em; line-height:1.1;">Alta prioridade</div>
+            <p style="font-size:14px; line-height:1.5; color:#ffffffc0; margin:10px 0 0 0;">Encaminhar imediatamente. Sintomas e perfil indicam risco elevado.</p>
+          </div>
+
+          <div class="comp-card">
+            <h4>Progress — 3 passos</h4>
+            <div style="display:flex; gap:8px; align-items:center; margin-top:8px;">
+              <div style="flex:1; height:6px; background:var(--azul); border-radius:999px;"></div>
+              <div style="flex:1; height:6px; background:var(--azul); border-radius:999px;"></div>
+              <div style="flex:1; height:6px; background:var(--paper-2); border-radius:999px;"></div>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-top:10px; font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3);">
+              <span style="color:var(--azul);">Dados</span><span style="color:var(--azul);">Sintomas</span><span>Resultado</span>
+            </div>
+          </div>
+
+          <div class="comp-card" style="background:#FFF8E8; border-color:#F2B13440; color:#6F4B05;">
+            <h4 style="color:#A3751A;">Banner offline</h4>
+            <div style="display:flex; align-items:center; gap:10px; margin-top:4px;">
+              <div style="width:8px; height:8px; border-radius:50%; background:var(--amar);"></div>
+              <div style="font-size:14px; font-weight:500; color:#6F4B05;">Sem conexão — salva e sincroniza quando pegar sinal.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="chrome-bot"><span>08 / 10</span><span>Sistema UI</span></div>
+    </div>
+  </section>
+
+  <!-- ─────────── 9. APPLICATION ─────────── -->
+  <section class="slide" data-label="Aplicações">
+    <div class="frame">
+      <div class="chrome-top"><span>08 · Aplicações</span><span>A marca no mundo</span></div>
+
+      <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:20px;">
+        <div>
+          <div class="eyebrow">Fora do app</div>
+          <h2 class="slide-title" style="margin-top:22px;">Colete, crachá,<br>porta de UBS.</h2>
+        </div>
+        <div style="max-width:460px; font-size:19px; line-height:1.55; color:var(--ink-2);">
+          A identidade vive em objetos de trabalho: o que o ACS veste, o que ele entrega, o que o gestor vê no painel.
+        </div>
+      </div>
+
+      <div class="app-canvas">
+        <!-- Coletes -->
+        <div class="app-card app-vest">
+          <div>
+            <div class="eb">Aplicação / Colete do ACS</div>
+            <h3>Visível de longe,<br>legível de perto.</h3>
+            <p style="color:#ffffffc0;">Símbolo em alto contraste, nome do agente e microárea em Mono caixa alta.</p>
+          </div>
+          <div class="vest-art">
+            <!-- Stylized vest shape -->
+            <svg viewBox="0 0 400 260" width="100%" style="max-width:420px;">
+              <path d="M60 60 L140 30 L180 60 L220 60 L260 30 L340 60 L340 240 L60 240 Z" fill="#C65A36" stroke="#a14527" stroke-width="2"/>
+              <path d="M200 30 L200 240" stroke="#a14527" stroke-width="2"/>
+              <!-- Left chest lockup -->
+              <g transform="translate(90, 95)">
+                <svg viewBox="0 0 64 64" width="54" height="54" fill="none" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 34 L17 34 L21 22 L28 46 L33 34 L40 34" stroke="#fff"/>
+                  <path d="M40 34 C40 27 45.5 22 52 22 C58.5 22 64 27 64 34 C64 43 52 58 52 58 C52 58 40 43 40 34 Z" fill="#fff" stroke="#fff"/>
+                  <circle cx="52" cy="34" r="3.5" fill="#C65A36"/>
+                </svg>
+                <text x="66" y="22" font-family="Sora" font-size="22" font-weight="600" fill="#fff">ACS</text>
+                <text x="66" y="44" font-family="JetBrains Mono" font-size="10" fill="#ffffffc0" letter-spacing="1.5">EXPERT / SUS</text>
+              </g>
+              <!-- Right chest strip -->
+              <g transform="translate(225, 110)">
+                <rect width="100" height="30" fill="#0B3A6F"/>
+                <text x="50" y="20" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#fff" letter-spacing="2">MICROÁREA 3</text>
+              </g>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Poster -->
+        <div class="app-card app-poster">
+          <div>
+            <div class="eb">Aplicação / Comunicação em UBS</div>
+            <h3>Campanha de vacinação.<br>Hoje, entre 14h e 18h.</h3>
+            <p style="color:#ffffffc0;">Nº gigante + uma linha. O sistema não pede layout elaborado — pede um recado direto.</p>
+          </div>
+          <div class="poster-num">04</div>
+        </div>
+
+        <!-- ID Card -->
+        <div class="app-card app-card-id">
+          <div>
+            <div class="eb">Aplicação / Crachá</div>
+            <h3>Identificação<br>do agente no campo.</h3>
+            <p style="color:#ffffffaa;">Foto, nome, matrícula e microárea. Símbolo grande no canto superior esquerdo.</p>
+          </div>
+          <div class="id-card">
+            <div class="id-head">
+              <span style="display:inline-flex; align-items:center; gap:10px;">
+                <svg viewBox="0 0 64 64" width="38" height="38" fill="none" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 34 L17 34 L21 22 L28 46 L33 34 L40 34" stroke="var(--azul)"/>
+                  <path d="M40 34 C40 27 45.5 22 52 22 C58.5 22 64 27 64 34 C64 43 52 58 52 58 C52 58 40 43 40 34 Z" fill="var(--coral)" stroke="var(--coral)"/>
+                  <circle cx="52" cy="34" r="3.5" fill="#fff"/>
+                </svg>
+                <div style="font-family:'Sora'; font-weight:600; font-size:20px; letter-spacing:-0.02em;">ACS <span style="color:var(--ink-3); font-weight:400;">Expert</span></div>
+              </span>
+              <div style="width:46px; height:46px; border-radius:50%; background:linear-gradient(135deg,var(--azul),var(--verde));"></div>
+            </div>
+            <div class="id-body">
+              <div><span class="k">Nome</span> LETÍCIA MARQUES</div>
+              <div><span class="k">Matrícula</span> 004 487 · 12</div>
+              <div><span class="k">Microárea</span> 03 — VILA NOVA</div>
+              <div><span class="k">UBS</span> UBS CENTRAL</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Web / Gestão -->
+        <div class="app-card app-web">
+          <div>
+            <div class="eb">Aplicação / Painel de gestão</div>
+            <h3>O mesmo sistema,<br>para quem coordena.</h3>
+          </div>
+          <div class="browser">
+            <div class="dots"><span></span><span></span><span></span></div>
+            <div class="bar">gestao.acsexpert.saude.gov.br / microárea-03</div>
+            <div class="content">
+              <div class="h">Microárea 03 — Vila Nova</div>
+              <div class="stats">
+                <div class="stat"><div class="n">187</div><div class="l">Pacientes ativos</div></div>
+                <div class="stat"><div class="n">23</div><div class="l">Alto risco</div></div>
+                <div class="stat"><div class="n">94%</div><div class="l">Cobertura / mês</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="chrome-bot"><span>09 / 10</span><span>Aplicações</span></div>
+    </div>
+  </section>
+
+  <!-- ─────────── 10. SIGN OFF ─────────── -->
+  <section class="slide signoff" data-label="Assinatura">
+    <div class="frame">
+      <div class="chrome-top" style="color:#ffffff66;"><span>— Fim</span><span>ACS Expert · Identidade 1.0</span></div>
+
+      <div class="big">
+        Uma ferramenta<br>
+        que veste bem<br>
+        <span class="i">quem cuida.</span>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+        <span class="mark">
+          <span class="mark-symbol" style="width:80px; height:80px;">
+            <svg viewBox="0 0 64 64" width="70" height="70" fill="none" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 34 L17 34 L21 22 L28 46 L33 34 L40 34" stroke="var(--paper)"/>
+              <path d="M40 34 C40 27 45.5 22 52 22 C58.5 22 64 27 64 34 C64 43 52 58 52 58 C52 58 40 43 40 34 Z" fill="var(--coral)" stroke="var(--coral)"/>
+              <circle cx="52" cy="34" r="3.5" fill="var(--ink)"/>
+            </svg>
+          </span>
+          <span class="mark-wordmark" style="color:var(--paper); font-size:44px;">ACS <span style="color:#ffffff88; font-weight:400;">Expert</span></span>
+        </span>
+        <div class="mono" style="font-family:'JetBrains Mono',monospace; font-size:14px; letter-spacing:.08em; text-transform:uppercase; color:#ffffff77; text-align:right; line-height:1.8;">
+          Identidade visual v1.0<br>
+          Abril 2026 · SUS / Ministério da Saúde<br>
+          Feita para o trabalho de campo
+        </div>
+      </div>
+
+      <div class="chrome-bot" style="color:#ffffff55;"><span>10 / 10</span><span>Obrigada</span></div>
+    </div>
+  </section>
+
+</deck-stage>
+
+</body>
+</html>
