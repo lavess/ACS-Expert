@@ -133,6 +133,43 @@ export function Agenda() {
     return () => { ativo = false; };
   }, [itens]);
 
+  // ── Rota para apps de navegação ──────────────────────────────
+  const [menuRotaAberto, setMenuRotaAberto] = useState(false);
+  const [rotaOtimizada, setRotaOtimizada]   = useState(false);
+
+  // Visitas pendentes com coordenadas, na ordem de prioridade da agenda.
+  const pendentesComCoords = useMemo(
+    () =>
+      visitasParaMapa
+        .filter((v) => v.status === 'pendente' && v.lat && v.lng)
+        .sort((a, b) => a.ordem - b.ordem),
+    [visitasParaMapa]
+  );
+
+  function abrirNoMapa(app: 'google' | 'waze') {
+    if (!pendentesComCoords.length) return;
+
+    if (app === 'google') {
+      // Origem = posição atual; destino = último; intermediários = waypoints
+      const destino = pendentesComCoords[pendentesComCoords.length - 1];
+      const waypoints = pendentesComCoords.slice(0, -1);
+      const dest = `${destino.lat},${destino.lng}`;
+      const wps = waypoints.map((v) => `${v.lat},${v.lng}`).join('|');
+      const url = `https://www.google.com/maps/dir/?api=1&destination=${dest}${wps ? `&waypoints=${encodeURIComponent(wps)}` : ''}&travelmode=driving`;
+      window.open(url, '_blank');
+    } else {
+      // Waze aceita apenas um destino — abre o primeiro (mais urgente)
+      const primeiro = pendentesComCoords[0];
+      const url = `https://waze.com/ul?ll=${primeiro.lat},${primeiro.lng}&navigate=yes`;
+      window.open(url, '_blank');
+    }
+
+    setRotaOtimizada(true);
+    setVisualizacao('mapa');
+    setMenuRotaAberto(false);
+    setTimeout(() => setRotaOtimizada(false), 5000);
+  }
+
   return (
     <div className="h-full flex flex-col pb-16 overflow-y-auto">
       {/* Header */}
@@ -338,22 +375,69 @@ export function Agenda() {
       {/* Mapa */}
       {!loading && itens.length > 0 && visualizacao === 'mapa' && (
         <div className="flex-1 px-6 py-4">
-          <MapaVisitas visitas={visitasParaMapa} />
+          <MapaVisitas visitas={visitasParaMapa} mostrarRota={rotaOtimizada} />
         </div>
       )}
 
-      {/* FAB regerar */}
+      {/* Menu de app de navegação */}
+      {menuRotaAberto && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setMenuRotaAberto(false)} />
+          <div className="fixed bottom-44 right-6 z-50 bg-white rounded-2xl shadow-[0_8px_32px_rgba(10,20,40,.18)] border border-acs-line overflow-hidden w-52">
+            <div className="px-4 py-2.5 border-b border-acs-line">
+              <p className="text-xs font-semibold text-acs-ink-3 uppercase tracking-wide">Abrir rota em</p>
+            </div>
+            <button
+              onClick={() => abrirNoMapa('google')}
+              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-acs-paper transition-colors text-left"
+            >
+              <div className="w-8 h-8 rounded-lg bg-white border border-acs-line flex items-center justify-center flex-shrink-0">
+                <MapPin size={18} className="text-acs-azul" strokeWidth={2.2} />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-acs-ink">Google Maps</p>
+                <p className="text-xs text-acs-ink-3">Rota com todos os pontos</p>
+              </div>
+            </button>
+            <button
+              onClick={() => abrirNoMapa('waze')}
+              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-acs-paper transition-colors text-left"
+            >
+              <div className="w-8 h-8 rounded-lg bg-acs-azul-100 flex items-center justify-center flex-shrink-0">
+                <MapPin size={18} className="text-acs-azul-700" strokeWidth={2.2} />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-acs-ink">Waze</p>
+                <p className="text-xs text-acs-ink-3">Primeiro destino urgente</p>
+              </div>
+            </button>
+          </div>
+        </>
+      )}
+
+      {/* FABs */}
       {!loading && itens.length > 0 && (
-        <button
-          className="fixed bottom-24 right-6 flex items-center gap-2 px-4 py-3 bg-acs-coral rounded-2xl shadow-[0_8px_20px_rgba(231,111,74,.45)] text-white font-semibold hover:brightness-95 transition-colors disabled:opacity-70"
-          onClick={regerar}
-          disabled={gerando}
-        >
-          {gerando
-            ? <Loader2 size={18} className="animate-spin" />
-            : <RefreshCw size={18} />}
-          {gerando ? 'Gerando…' : 'Recalcular'}
-        </button>
+        <div className="fixed bottom-24 right-6 flex flex-col items-end gap-3 z-30">
+          {pendentesComCoords.length > 0 && (
+            <button
+              className="flex items-center gap-2 px-4 py-3 bg-acs-azul rounded-2xl shadow-[0_8px_20px_rgba(11,58,111,.35)] text-white font-semibold hover:bg-acs-azul-700 transition-colors"
+              onClick={() => setMenuRotaAberto((v) => !v)}
+            >
+              <MapPin size={18} strokeWidth={2.2} />
+              Otimizar rota
+            </button>
+          )}
+          <button
+            className="flex items-center gap-2 px-4 py-3 bg-acs-coral rounded-2xl shadow-[0_8px_20px_rgba(231,111,74,.45)] text-white font-semibold hover:brightness-95 transition-colors disabled:opacity-70"
+            onClick={regerar}
+            disabled={gerando}
+          >
+            {gerando
+              ? <Loader2 size={18} className="animate-spin" />
+              : <RefreshCw size={18} />}
+            {gerando ? 'Gerando…' : 'Recalcular'}
+          </button>
+        </div>
       )}
     </div>
   );
